@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-accent="cyan">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>One Line Puzzle Solver</title>
+  <link rel="icon" href="https://www.image2url.com/r2/default/images/1779596463444-fb1f3e5c-e265-4c6c-9f50-180b0ecf7af8.png">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Archivo:wght@600;700;800&family=Google Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --font-main: 'Plus Jakarta Sans', sans-serif;
+      --font-display: 'Archivo', sans-serif;
+      --font-title: 'Google Sans', sans-serif;
+      
+      --accent-amber: #ff9f0a;
+      --accent-amber-glow: rgba(255, 159, 10, 0.35);
+      --accent-amber-grad: linear-gradient(135deg, #ff9f0a, #ff3b30);
+      
+      --accent-cyan: #00ded3;
+      --accent-cyan-glow: rgba(0, 222, 211, 0.35);
+      --accent-cyan-grad: linear-gradient(135deg, #00ded3, #007aff);
+      
+      --accent-emerald: #30d158;
+      --accent-emerald-glow: rgba(48, 209, 88, 0.35);
+      --accent-emerald-grad: linear-gradient(135deg, #30d158, #05a660);
+      
+      --accent-purple: #bf5af2;
+      --accent-purple-glow: rgba(191, 90, 242, 0.35);
+      --accent-purple-grad: linear-gradient(135deg, #bf5af2, #5e5ce6);
+
+      --cell-size: clamp(24px, 6.5vw, 48px);
+      --cell-gap: clamp(4px, 1vw, 6px);
+    }
+
+    [data-theme="dark"] {
+      --bg: #06070d;
+      --surface: rgba(17, 20, 38, 0.65);
+      --surface-card: rgba(22, 26, 49, 0.8);
+      --surface-hover: rgba(32, 38, 71, 0.9);
+      --border: rgba(255, 255, 255, 0.07);
+      --border-focus: rgba(255, 255, 255, 0.18);
+      --text: #f5f6fa;
+      --text-muted: #7e8a9f;
+      --card-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+      --cell-empty: rgba(255, 255, 255, 0.02);
+      --glass-blur: blur(20px);
+    }
+
+    [data-theme="light"] {
+      --bg: #f0f2f8;
+      --surface: rgba(255, 255, 255, 0.65);
+      --surface-card: rgba(255, 255, 255, 0.85);
+      --surface-hover: rgba(230, 235, 245, 0.9);
+      --border: rgba(15, 23, 42, 0.08);
+      --border-focus: rgba(15, 23, 42, 0.2);
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --card-shadow: 0 24px 60px -12px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255,255,255,0.6);
+      --cell-empty: rgba(15, 23, 42, 0.03);
+      --glass-blur: blur(20px);
+    }
+
+    [data-accent="amber"] { --primary: var(--accent-amber); --primary-glow: var(--accent-amber-glow); --primary-grad: var(--accent-amber-grad); }
+    [data-accent="cyan"] { --primary: var(--accent-cyan); --primary-glow: var(--accent-cyan-glow); --primary-grad: var(--accent-cyan-grad); }
+    [data-accent="emerald"] { --primary: var(--accent-emerald); --primary-glow: var(--accent-emerald-glow); --primary-grad: var(--accent-emerald-grad); }
+    [data-accent="purple"] { --primary: var(--accent-purple); --primary-glow: var(--accent-purple-glow); --primary-grad: var(--accent-purple-grad); }
+
+    /* ── BASE & GLOBAL TRANSITION ENGINES ──────────────────── */
+    * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
+    
+    body, .premium-card, .btn-utility, .preset-pill-node, .deck-tab-trigger, .btn-step-action, .grid-node-cell, .btn-prime-action, .btn-return-link {
+      transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    body {
+      font-family: var(--font-main);
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+      position: relative;
+    }
+
+    .bg-aura {
+      position: fixed;
+      width: clamp(300px, 60vw, 500px);
+      height: clamp(300px, 60vw, 500px);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle, var(--primary-glow) 0%, transparent 65%);
+      opacity: 0.5;
+      pointer-events: none;
+      z-index: 1;
+      filter: blur(40px);
+      animation: auraFloat 8s infinite alternate ease-in-out;
+      transition: background 0.5s ease;
+    }
+    @keyframes auraFloat {
+      0% { transform: translate(-42%, -53%) scale(0.95); }
+      100% { transform: translate(-54%, -47%) scale(1.1); }
+    }
+
+    .top-toolbar {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+      z-index: 100;
+    }
+    .accent-palette-box {
+      background: var(--surface);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--border);
+      padding: 0 10px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .accent-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .accent-dot:hover { transform: scale(1.3); }
+    .accent-dot.active { border-color: var(--text); transform: scale(1.15); }
+
+    .btn-utility {
+      background: var(--surface);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-utility:hover {
+      border-color: var(--primary);
+      box-shadow: 0 0 14px var(--primary-glow);
+      background: var(--surface-hover);
+      transform: scale(1.08);
+    }
+    .btn-utility:active { transform: scale(0.95); }
+
+    .container-wrapper {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 600px;
+      padding: 80px 10px 24px 10px;
+    }
+    
+    .screen-panel {
+      display: none;
+      width: 100%;
+      opacity: 0;
+      transform: translateY(20px) scale(0.98);
+      transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                  transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .screen-panel.active {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .premium-card {
+      background: var(--surface-card);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: clamp(14px, 4vw, 32px);
+      width: 100%;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .branding-group { 
+      text-align: center; 
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 24px;
+    }
+    .main-logo-title {
+      font-family: var(--font-main);
+      font-weight: 800;
+      font-size: clamp(2.4rem, 8.5vw, 3.8rem);
+      letter-spacing: 0.10em;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--text) 40%, var(--primary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .sub-logo-tag-title {
+      font-family: var(--font-title);
+      font-size: clamp(1px, 2.5vw, 12px);
+      color: var(--primary);
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      margin-top: 8px;
+      font-weight: 700;
+      opacity: 0.9;
+    }
+    .branding-description {
+      font-family: var(--font-display);
+      font-size: clamp(12px, 3vw, 13.5px);
+      font-weight: 400;
+      line-height: 1.55;
+      color: var(--text-muted);
+      max-width: 440px;
+      margin-top: 14px;
+      letter-spacing: 0.02em;
+      opacity: 0.75; 
+    }
+
+    .dimension-orchestrator { 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      gap: clamp(10px, 4vw, 24px); 
+      width: 100%;
+    }
+    .orchestrator-node { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .node-label { font-size: 9px; color: var(--text-muted); letter-spacing: 0.18em; font-weight: 800; }
+    .stepper-hub { display: flex; align-items: center; gap: clamp(6px, 1.5vw, 10px); }
+    
+    .btn-step-action {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-step-action:hover { 
+      border-color: var(--primary); 
+      background: var(--surface-hover); 
+      color: var(--primary); 
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+    .btn-step-action:active { transform: scale(0.95); }
+    
+    .radial-progress-shell { position: relative; width: 60px; height: 60px; }
+    .radial-progress-shell svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+    .radial-progress-shell svg circle.track { stroke: var(--border); fill: none; }
+    .radial-progress-shell svg circle.fill { stroke: var(--primary); fill: none; transition: stroke-dasharray 0.3s ease, stroke 0.3s ease; }
+    
+    .stepper-value-input {
+      width: 60px;
+      height: 60px;
+      text-align: center;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 20px;
+      font-family: var(--font-display);
+      font-weight: 800;
+      outline: none;
+      position: relative;
+      z-index: 5;
+    }
+    .stepper-value-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    .multiplier-sign {
+      font-family: var(--font-display); 
+      font-size: 18px; 
+      font-weight: 700; 
+      color: var(--border-focus); 
+      transition: transform 0.3s ease;
+    }
+
+    @media (max-width: 440px) {
+      .dimension-orchestrator {
+        flex-direction: column;
+        gap: 12px;
+      }
+      .multiplier-sign {
+        transform: rotate(90deg);
+        margin: 2px 0;
+      }
+    }
+
+    /* Buttons Style */
+    .btn-prime-action {
+      background: var(--primary-grad);
+      color: #06070d;
+      border: none;
+      border-radius: 14px;
+      padding: 14px 40px;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 0.15em;
+      cursor: pointer;
+      width: 100%;
+      max-width: 280px;
+      box-shadow: 0 10px 25px -8px var(--primary-glow);
+    }
+    .btn-prime-action:hover { 
+      transform: translateY(-2px) scale(1.02); 
+      box-shadow: 0 14px 30px -4px var(--primary-glow); 
+    }
+    .btn-prime-action:active { transform: translateY(1px) scale(0.98); }
+
+    .live-matrix-preview { display: grid; gap: 2px; background: rgba(0,0,0,0.15); padding: 6px; border-radius: 8px; border: 1px solid var(--border); }
+    .preview-dot { width: 5px; height: 5px; border-radius: 1px; background: var(--border); transition: background 0.2s; }
+    .preview-dot.filled { background: var(--primary); opacity: 0.4; }
+
+    /* Presets Box */
+    .presets-box { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; border-top: 1px solid var(--border); padding-top: 20px; }
+    .presets-title-lbl { font-size: 9px; color: var(--text-muted); letter-spacing: 0.2em; font-weight: 800; text-transform: uppercase; }
+    .pills-group { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+    .preset-pill-node {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 10px;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .preset-pill-node:hover { 
+      border-color: var(--primary); 
+      color: var(--text); 
+      background: var(--surface-hover); 
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px var(--primary-glow);
+    }
+
+    /* ── INTERACTIVE CANVAS ARCHITECT WORKSPACE ─────────────── */
+    .architect-header { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 16px; }
+    .btn-return-link { 
+      color: var(--text-muted); 
+      cursor: pointer; 
+      font-size: 11px; 
+      font-weight: 700; 
+      display: inline-flex; 
+      align-items: center; 
+      text-transform: uppercase; 
+      letter-spacing: 0.12em; 
+    }
+    .btn-return-link:hover { color: var(--primary); transform: translateX(-2px); }
+
+    .panel-metrics-lbl { font-family: var(--font-display); font-size: 12px; font-weight: 700; color: var(--text-muted); background: var(--surface); padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border); }
+    .panel-metrics-lbl span { color: var(--primary); }
+
+    .control-deck-tabs {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 4px;
+      display: flex;
+      gap: 4px;
+      margin-bottom: 10px;
+      width: 100%;
+    }
+    .deck-tab-trigger {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .deck-tab-trigger.active { 
+      background-color: var(--primary);
+      background-image: var(--primary-grad); 
+      color: #06070d; 
+      box-shadow: 0 4px 14px var(--primary-glow); 
+    }
+    .status-caption-tip { font-size: 10px; color: var(--text-muted); letter-spacing: 0.08em; height: 14px; margin-bottom: 20px; text-transform: uppercase; font-weight: 600; text-align: center; }
+
+    /* Viewport Grid Box Framework (Anti-Overflow Defense) */
+    .viewport-grid-canvas { 
+      position: relative; 
+      margin-bottom: 20px; 
+      background: rgba(0,0,0,0.2); 
+      padding: 8px; 
+      border-radius: 16px; 
+      border: 1px solid var(--border); 
+      box-shadow: inset 0 4px 24px rgba(0,0,0,0.3);
+      max-width: 100%;
+      width: auto;
+      overflow: visible; /* Diperbolehkan agar transform scale hover tidak terpotong */
+    }
+    .cells-structural-layer { 
+      display: grid; 
+      position: relative; 
+      z-index: 5; 
+      justify-content: center;
+      align-content: center;
+    }
+    
+    /* Responsive Grid Nodes */
+    .grid-node-cell {
+      background: var(--cell-empty);
+      border: 1px solid var(--border);
+      border-radius: 24%; 
+      cursor: crosshair;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: var(--cell-size);
+      height: var(--cell-size);
+    }
+    .grid-node-cell.active-node { background: var(--surface-card); }
+    .grid-node-cell.active-node:hover { 
+      transform: scale(1.12); 
+      border-color: var(--primary); 
+      background: var(--surface-hover);
+      box-shadow: 0 0 14px var(--primary-glow);
+      z-index: 8;
+    }
+    
+    .grid-node-cell.visited-node { background: rgba(from var(--primary) r g b / 0.06); border-color: rgba(from var(--primary) r g b / 0.25); }
+    .grid-node-cell.current-node { background: var(--primary-grad); border-color: var(--primary); color: #06070d; box-shadow: 0 0 20px var(--primary); transform: scale(1.06); z-index: 9; }
+    
+    .grid-node-cell.start-node { border: 2px solid var(--primary); position: relative; }
+    .radar-pulse-ring {
+      position: absolute;
+      inset: -3px;
+      border: 2px solid var(--primary);
+      border-radius: 30%;
+      opacity: 0;
+      pointer-events: none;
+      animation: radarExplosion 2s infinite cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes radarExplosion {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      100% { transform: scale(1.35); opacity: 0; }
+    }
+
+    .anchor-dot-icon { width: 30%; height: 30%; min-width: 8px; min-height: 8px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 8px var(--primary); }
+    .current-node .anchor-dot-icon { background: #06070d; box-shadow: none; }
+    
+    .step-counter-tag { 
+      color: var(--primary); 
+      font-size: clamp(9px, 2.5vw, 13px); 
+      font-weight: 800; 
+      font-family: var(--font-display); 
+      text-shadow: 0 2px 4px rgba(0,0,0,0.4); 
+    }
+    .current-node .step-counter-tag { color: #06070d; text-shadow: none; }
+
+    .vector-svg-overlay { 
+      position: absolute; 
+      inset: 0; 
+      pointer-events: none; 
+      z-index: 10; 
+      width: 100%;
+      height: 100%;
+    }
+
+    .action-row-deck { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; width: 100%; justify-content: center; }
+    .status-toast-strip { min-height: 24px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px; text-align: center; justify-content: center; flex-wrap: wrap; }
+    .status-indicator-lamp { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+
+    .slider-panel-wrapper { display: flex; align-items: center; gap: 12px; margin-top: 12px; width: 100%; max-width: 260px; background: var(--surface); padding: 8px 14px; border-radius: 10px; border: 1px solid var(--border); }
+    .slider-panel-wrapper span { font-size: 8px; color: var(--text-muted); letter-spacing: 0.1em; font-weight: 800; }
+    .custom-range-slider { flex: 1; -webkit-appearance: none; appearance: none; height: 4px; background: var(--border); border-radius: 99px; outline: none; }
+    .custom-range-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--primary-grad); cursor: pointer; box-shadow: 0 0 10px var(--primary); }
+  </style>
+</head>
+<body>
+
+  <div class="bg-aura" id="dynamicGlowAura"></div>
+
+  <div class="top-toolbar">
+    <div class="accent-palette-box">
+      <div class="accent-dot" style="background: var(--accent-cyan);" onclick="setSystemAccent('cyan')"></div>
+      <div class="accent-dot" style="background: var(--accent-amber);" onclick="setSystemAccent('amber')"></div>
+      <div class="accent-dot" style="background: var(--accent-emerald);" onclick="setSystemAccent('emerald')"></div>
+      <div class="accent-dot" style="background: var(--accent-purple);" onclick="setSystemAccent('purple')"></div>
+    </div>
+    <button class="btn-utility" id="themeToggleBtn" onclick="toggleInterfaceTheme()">
+      <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+    </button>
+  </div>
+
+  <div class="container-wrapper">
+    
+    <div id="setupScreen" class="screen-panel active">
+      <div class="branding-group">
+        <h1 class="main-logo-title">ONE LINE</h1>
+        <div class="sub-logo-tag-title">PUZZLE SOLVER</div>
+        <p class="branding-description">
+          Instantly solve single-stroke drawing puzzles. Input your custom matrix pattern or pick a blueprint level to trace the perfect Eulerian path automatically.
+        </p>
+      </div>
+
+      <div class="premium-card" style="margin-top: 24px;">
+        <div class="dimension-orchestrator">
+          <div class="orchestrator-node">
+            <div class="node-label">COLUMNS (X)</div>
+            <div class="stepper-hub">
+              <button class="btn-step-action" onclick="adjustSizeMetrics('X', -1)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+              <div class="radial-progress-shell">
+                <svg width="60" height="60"><circle class="track" cx="30" cy="30" r="26" stroke-width="2.5"></circle><circle id="radialCircleX" class="fill" cx="30" cy="30" r="26" stroke-width="2.5"></circle></svg>
+                <input type="number" id="inputX" class="stepper-value-input" value="5" min="1" max="12" readonly>
+              </div>
+              <button class="btn-step-action" onclick="adjustSizeMetrics('X', 1)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+            </div>
+          </div>
+          
+          <div class="multiplier-sign">&times;</div>
+
+          <div class="orchestrator-node">
+            <div class="node-label">ROWS (Y)</div>
+            <div class="stepper-hub">
+              <button class="btn-step-action" onclick="adjustSizeMetrics('Y', -1)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+              <div class="radial-progress-shell">
+                <svg width="60" height="60"><circle class="track" cx="30" cy="30" r="26" stroke-width="2.5"></circle><circle id="radialCircleY" class="fill" cx="30" cy="30" r="26" stroke-width="2.5"></circle></svg>
+                <input type="number" id="inputY" class="stepper-value-input" value="5" min="1" max="12" readonly>
+              </div>
+              <button class="btn-step-action" onclick="adjustSizeMetrics('Y', 1)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="miniGridPreview" class="live-matrix-preview"></div>
+
+        <button class="btn-prime-action" onclick="generateWorkspaceMatrix()">Generate Puzzle</button>
+
+        <div class="presets-box">
+          <div class="presets-title-lbl">Select Blueprint Preset</div>
+          <div class="pills-group" id="presetsRow"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="editorScreen" class="screen-panel">
+      <div class="architect-header">
+        <div class="btn-return-link" onclick="rollbackToSetup()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Size Setup
+        </div>
+        <div class="panel-metrics-lbl" id="gridDimensionsLabel">0 &times; 0 | Nodes: <span>0</span></div>
+      </div>
+
+      <div class="control-deck-tabs">
+        <button class="deck-tab-trigger active" id="tab-erase" onclick="changeWorkspaceTool('erase')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H4"/><path d="M20 12l-7.5 7.5-6-6 7.5-7.5 6 6Z"/></svg>
+          Erase
+        </button>
+        <button class="deck-tab-trigger" id="tab-add" onclick="changeWorkspaceTool('add')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Fill
+        </button>
+        <button class="deck-tab-trigger" id="tab-setstart" onclick="changeWorkspaceTool('setstart')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+          Anchor
+        </button>
+      </div>
+      <div class="status-caption-tip" id="modeCaptionMessage">Drag over nodes to remove path limits</div>
+
+      <div class="viewport-grid-canvas" id="gridViewport">
+        <div class="cells-structural-layer" id="gridCellContainer"></div>
+        <svg class="vector-svg-overlay" id="vectorRouteCanvas"></svg>
+      </div>
+
+      <div class="action-row-deck">
+        <button class="btn-prime-action" id="solveButton" style="max-width: 220px;" onclick="invokeComputationalSolver()">Solve Puzzle</button>
+        <button class="btn-utility" id="replayButton" style="display:none; width:46px; height:46px;" onclick="restartPlaybackLoop()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+        </button>
+      </div>
+
+      <div class="status-toast-strip" id="statusBarContainer"></div>
+
+      <div class="slider-panel-wrapper" id="speedControlBox" style="display: none;">
+        <span>SLOW</span>
+        <input type="range" class="custom-range-slider" id="animationSpeedSlider" min="50" max="680" step="15" value="520" onchange="modifyPlaybackDelay(this.value)">
+        <span>FAST</span>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /* ── PUZZLE COMPUTATIONAL LOGIC ENGINE (WARNSDORFF HEURISTIC) ── */
+    const ck = (r, c) => `${r},${c}`;
+    const uk = k => k.split(",").map(Number);
+    
+    function findNodeNeighbors(r, c, cells) {
+      return [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]].filter(([a, b]) => cells.has(ck(a, b)));
+    }
+
+    function testGraphContiguity(cells, visited) {
+      const remainingNodes = [...cells].filter(k => !visited.has(k));
+      if (remainingNodes.length <= 1) return true;
+      const discovered = new Set([remainingNodes[0]]);
+      const processingQueue = [remainingNodes[0]];
+      
+      while (processingQueue.length) {
+        const [r, c] = uk(processingQueue.shift());
+        for (const [a, b] of [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]]) {
+          const neighborKey = ck(a, b);
+          if (cells.has(neighborKey) && !visited.has(neighborKey) && !discovered.has(neighborKey)) {
+            discovered.add(neighborKey);
+            processingQueue.push(neighborKey);
+          }
+        }
+      }
+      return discovered.size === remainingNodes.length;
+    }
+
+    function processPathMatrix(cells, startPosition) {
+      if (!cells.size || !startPosition || !cells.has(ck(startPosition[0], startPosition[1]))) return null;
+      const goalPathLength = cells.size;
+      const computationPath = [[startPosition[0], startPosition[1]]];
+      const traceVisitedSet = new Set([ck(startPosition[0], startPosition[1])]);
+      let solvedFlag = false;
+      let securityCounter = 0;
+
+      function exploreMatrixBranches() {
+        if (solvedFlag || ++securityCounter > 500000) return; // Iterasi dinaikkan demi menangani kompleksitas 12x12
+        if (computationPath.length === goalPathLength) { solvedFlag = true; return; }
+
+        const [r, c] = computationPath[computationPath.length - 1];
+        const evaluatedMoves = findNodeNeighbors(r, c, cells)
+          .filter(([a, b]) => !traceVisitedSet.has(ck(a, b)))
+          .sort((posA, posB) => {
+            const countA = findNodeNeighbors(posA[0], posA[1], cells).filter(([x, y]) => !traceVisitedSet.has(ck(x, y))).length;
+            const countB = findNodeNeighbors(posB[0], posB[1], cells).filter(([x, y]) => !traceVisitedSet.has(ck(x, y))).length;
+            return countA - countB;
+          });
+
+        if (!evaluatedMoves.length) return;
+
+        for (const [nextR, nextC] of evaluatedMoves) {
+          if (solvedFlag) return;
+          const targetKey = ck(nextR, nextC);
+          traceVisitedSet.add(targetKey);
+          computationPath.push([nextR, nextC]);
+
+          if (testGraphContiguity(cells, traceVisitedSet)) {
+            exploreMatrixBranches();
+          }
+
+          if (!solvedFlag) {
+            computationPath.pop();
+            traceVisitedSet.delete(targetKey);
+          }
+        }
+      }
+
+      exploreMatrixBranches();
+      return solvedFlag ? computationPath : (securityCounter > 500000 ? "timeout" : null);
+    }
+
+    /* ── SYSTEM APP ARCHITECTURE AND GLOBAL STATE ────────────── */
+    const CONFIGURATION_BLUEPRINTS = [
+      { label: "Classic 3×3", rows: 3, cols: 3, start: [0, 0], cells: ["0,0","0,1","0,2","1,0","1,1","1,2","2,0","2,1","2,2"] },
+      { label: "Symmetric 5×5", rows: 5, cols: 5, start: [0, 0], cells: ["0,0","0,1","0,2","0,3","0,4","1,0","1,4","2,0","2,4","3,0","3,4","4,0","4,1","4,2","4,3","4,4"] },
+      { label: "Expert 8×8", rows: 8, cols: 8, start: [0, 0], cells: ["0,0","0,1","0,2","0,3","0,4","0,5","0,6","0,7","1,0","1,7","2,0","2,2","2,3","2,4","2,5","2,7","3,0","3,2","3,5","3,7","4,0","4,2","4,5","4,7","5,0","5,2","5,3","5,4","5,5","5,7","6,0","6,7","7,0","7,1","7,2","7,3","7,4","7,5","7,6","7,7"] }
+    ];
+
+    let appState = {
+      viewMode: "setup",
+      rows: 5,
+      cols: 5,
+      cells: new Set(),
+      startCell: null,
+      activeTool: "erase", 
+      solutionRoute: null,
+      playbackStep: 0,
+      engineStatus: "idle", 
+      playbackDelay: 210
+    };
+
+    let playbackIntervalRef = null;
+    let primaryDragStateFlag = false;
+    let structuralEraseModeFlag = false;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      buildBlueprintSystemRow();
+      syncRadialEngineState();
+      renderMiniSetupPreview();
+      setSystemAccent('cyan');
+      
+      window.addEventListener("mouseup", () => { primaryDragStateFlag = false; });
+      window.addEventListener("touchend", () => { primaryDragStateFlag = false; });
+      window.addEventListener("resize", () => {
+        if (appState.viewMode === "editor") renderVectorTracePaths();
+      });
+    });
+
+    function toggleInterfaceTheme() {
+      const DOMRoot = document.documentElement;
+      const currentTheme = DOMRoot.getAttribute("data-theme");
+      const nextTheme = currentTheme === "dark" ? "light" : "dark";
+      DOMRoot.setAttribute("data-theme", nextTheme);
+      
+      const themeIcon = document.getElementById("themeIcon");
+      if (nextTheme === "light") {
+        themeIcon.innerHTML = `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>`;
+      } else {
+        themeIcon.innerHTML = `<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>`;
+      }
+      if (appState.viewMode === "editor") setTimeout(renderVectorTracePaths, 50);
+    }
+
+    function setSystemAccent(paletteName) {
+      document.documentElement.setAttribute("data-accent", paletteName);
+      document.querySelectorAll(".accent-dot").forEach(node => {
+        node.classList.remove("active");
+        if(node.style.background.includes(paletteName)) node.classList.add("active");
+      });
+      if (appState.viewMode === "editor") renderVectorTracePaths();
+    }
+
+    function adjustSizeMetrics(axisDimension, stepDelta) {
+      const inputRef = document.getElementById(`input${axisDimension}`);
+      let sourceVal = parseInt(inputRef.value) || 5;
+      let outputVal = Math.min(12, Math.max(1, sourceVal + stepDelta)); // Batas atas dinaikkan ke 12
+      inputRef.value = outputVal;
+      
+      if (axisDimension === 'X') appState.cols = outputVal;
+      else appState.rows = outputVal;
+      
+      syncRadialEngineState();
+      renderMiniSetupPreview();
+    }
+
+    function syncRadialEngineState() {
+      const metricX = parseFloat(document.getElementById("inputX").value) || 5;
+      const metricY = parseFloat(document.getElementById("inputY").value) || 5;
+      const circumferenceCircle = 2 * Math.PI * 26; 
+      
+      document.getElementById("radialCircleX").style.strokeDasharray = `${(metricX / 12) * circumferenceCircle} ${circumferenceCircle}`;
+      document.getElementById("radialCircleY").style.strokeDasharray = `${(metricY / 12) * circumferenceCircle} ${circumferenceCircle}`;
+    }
+
+    function renderMiniSetupPreview() {
+      const targetX = parseInt(document.getElementById("inputX").value) || 5;
+      const targetY = parseInt(document.getElementById("inputY").value) || 5;
+      const microContainer = document.getElementById("miniGridPreview");
+      
+      microContainer.style.gridTemplateColumns = `repeat(${targetX}, 5px)`;
+      microContainer.innerHTML = "";
+      for (let i = 0; i < targetX * targetY; i++) {
+        const miniDot = document.createElement("div");
+        miniDot.className = "preview-dot filled";
+        microContainer.appendChild(miniDot);
+      }
+    }
+
+    function buildBlueprintSystemRow() {
+      const wrapperRow = document.getElementById("presetsRow");
+      CONFIGURATION_BLUEPRINTS.forEach(blueprint => {
+        const optionPill = document.createElement("button");
+        optionPill.className = "preset-pill-node";
+        optionPill.innerText = blueprint.label;
+        optionPill.onclick = () => loadCalibratedSystemBlueprint(blueprint);
+        wrapperRow.appendChild(optionPill);
+      });
+    }
+
+    function renderViewContext(activeContextScreen) {
+      appState.viewMode = activeContextScreen;
+      const setupPanel = document.getElementById("setupScreen");
+      const editorPanel = document.getElementById("editorScreen");
+
+      if (activeContextScreen === "setup") {
+        editorPanel.classList.remove("active");
+        setTimeout(() => {
+          editorPanel.style.display = "none";
+          setupPanel.style.display = "flex";
+          setTimeout(() => setupPanel.classList.add("active"), 40);
+        }, 200);
+      } else {
+        setupPanel.classList.remove("active");
+        setTimeout(() => {
+          setupPanel.style.display = "none";
+          editorPanel.style.display = "flex";
+          setTimeout(() => {
+            editorPanel.classList.add("active");
+            renderVectorTracePaths(); 
+          }, 40);
+        }, 200);
+      }
+    }
+
+    function generateWorkspaceMatrix() {
+      appState.rows = parseInt(document.getElementById("inputY").value) || 5;
+      appState.cols = parseInt(document.getElementById("inputX").value) || 5;
+      appState.cells = new Set();
+      
+      for (let r = 0; r < appState.rows; r++) {
+        for (let c = 0; c < appState.cols; c++) {
+          appState.cells.add(ck(r, c));
+        }
+      }
+      appState.startCell = null;
+      launchCanvasControlEditor();
+    }
+
+    function loadCalibratedSystemBlueprint(blueprintSchema) {
+      document.getElementById("inputX").value = blueprintSchema.cols;
+      document.getElementById("inputY").value = blueprintSchema.rows;
+      syncRadialEngineState();
+      renderMiniSetupPreview();
+
+      appState.rows = blueprintSchema.rows;
+      appState.cols = blueprintSchema.cols;
+      appState.cells = new Set(blueprintSchema.cells);
+      appState.startCell = blueprintSchema.start ? [...blueprintSchema.start] : null;
+      
+      launchCanvasControlEditor();
+    }
+
+    function rollbackToSetup() {
+      haltActiveAnimationIntervals();
+      renderViewContext("setup");
+    }
+
+    function launchCanvasControlEditor() {
+      appState.solutionRoute = null;
+      appState.playbackStep = 0;
+      appState.engineStatus = "idle";
+      appState.activeTool = "erase";
+      
+      document.querySelectorAll(".deck-tab-trigger").forEach(t => t.classList.remove("active"));
+      document.getElementById("tab-erase").classList.add("active");
+      document.getElementById("modeCaptionMessage").innerText = "Drag over nodes to remove path limits";
+      
+      document.getElementById("replayButton").style.display = "none";
+      document.getElementById("speedControlBox").style.display = "none";
+      
+      haltActiveAnimationIntervals();
+      synchronizeDomGridCanvas();
+      renderViewContext("editor");
+    }
+
+    function changeWorkspaceTool(selectedToolMode) {
+      appState.activeTool = selectedToolMode;
+      document.querySelectorAll(".deck-tab-trigger").forEach(tab => tab.classList.remove("active"));
+      document.getElementById(`tab-${selectedToolMode}`).classList.add("active");
+      
+      const conceptualTipLabels = {
+        erase: "Drag over nodes to remove path limits",
+        add: "Tap dead spaces to append operational nodes",
+        setstart: "Select grid node to instantiate path anchor origin"
+      };
+      document.getElementById("modeCaptionMessage").innerText = conceptualTipLabels[selectedToolMode];
+    }
+
+    function evaluateNodeStateManipulation(targetR, targetC) {
+      const lookupKey = ck(targetR, targetC);
+      if (appState.activeTool === "setstart") {
+        if (appState.cells.has(lookupKey)) appState.startCell = [targetR, targetC];
+        resetExecutionRouteState();
+        return;
+      }
+
+      if (appState.activeTool === "erase") {
+        if (structuralEraseModeFlag) {
+          appState.cells.delete(lookupKey);
+          if (appState.startCell && appState.startCell[0] === targetR && appState.startCell[1] === targetC) appState.startCell = null;
+        }
+      } else if (appState.activeTool === "add") {
+        appState.cells.add(lookupKey);
+      }
+
+      resetExecutionRouteState();
+    }
+
+    function resetExecutionRouteState() {
+      appState.solutionRoute = null;
+      appState.engineStatus = "idle";
+      haltActiveAnimationIntervals();
+      synchronizeDomGridCanvas();
+    }
+
+    function synchronizeDomGridCanvas() {
+      const renderingCoreLayer = document.getElementById("gridCellContainer");
+      renderingCoreLayer.style.gridTemplateColumns = `repeat(${appState.cols}, var(--cell-size))`;
+      renderingCoreLayer.style.gap = `var(--cell-gap)`;
+      renderingCoreLayer.innerHTML = "";
+
+      document.getElementById("gridDimensionsLabel").innerHTML = `${appState.cols} &times; ${appState.rows} | Nodes: <span>${appState.cells.size}</span>`;
+
+      const processingVisitedSet = appState.solutionRoute ? new Set(appState.solutionRoute.slice(0, appState.playbackStep + 1).map(([r, c]) => ck(r, c))) : new Set();
+      const currentActiveIndexCell = (appState.solutionRoute && appState.solutionRoute.length > 0) ? appState.solutionRoute[Math.min(appState.playbackStep, appState.solutionRoute.length - 1)] : null;
+
+      for (let r = 0; r < appState.rows; r++) {
+        for (let c = 0; c < appState.cols; c++) {
+          const uniqueKey = ck(r, c);
+          const activeCellFlag = appState.cells.has(uniqueKey);
+          const operationalStartFlag = appState.startCell && appState.startCell[0] === r && appState.startCell[1] === c;
+          const identityCurrentFlag = currentActiveIndexCell && currentActiveIndexCell[0] === r && currentActiveIndexCell[1] === c;
+          const statusVisitedFlag = processingVisitedSet.has(uniqueKey);
+
+          const cellDOMContainer = document.createElement("div");
+          cellDOMContainer.className = "grid-node-cell";
+          cellDOMContainer.setAttribute("data-row", r);
+          cellDOMContainer.setAttribute("data-col", c);
+          
+          if (activeCellFlag) {
+            cellDOMContainer.classList.add("active-node");
+            if (statusVisitedFlag) cellDOMContainer.classList.add("visited-node");
+            if (operationalStartFlag) cellDOMContainer.classList.add("start-node");
+            if (identityCurrentFlag) cellDOMContainer.classList.add("current-node");
+
+            cellDOMContainer.addEventListener("mousedown", (e) => {
+              e.preventDefault();
+              primaryDragStateFlag = true;
+              structuralEraseModeFlag = appState.cells.has(uniqueKey) && appState.activeTool === "erase";
+              evaluateNodeStateManipulation(r, c);
+            });
+            cellDOMContainer.addEventListener("mouseenter", () => {
+              if (primaryDragStateFlag && appState.activeTool !== "setstart") evaluateNodeStateManipulation(r, c);
+            });
+
+            if (operationalStartFlag && !identityCurrentFlag) {
+              const pulseDecoration = document.createElement("div");
+              pulseDecoration.className = "radar-pulse-ring";
+              const internalAnchorCore = document.createElement("div");
+              internalAnchorCore.className = "anchor-dot-icon";
+              cellDOMContainer.appendChild(pulseDecoration);
+              cellDOMContainer.appendChild(internalAnchorCore);
+            } else if (appState.solutionRoute && statusVisitedFlag && !identityCurrentFlag) {
+              const sequentialPathIndex = appState.solutionRoute.findIndex(([targetA, targetB]) => targetA === r && targetB === c);
+              if (sequentialPathIndex >= 0) {
+                const numericStepTag = document.createElement("span");
+                numericStepTag.className = "step-counter-tag";
+                numericStepTag.innerText = sequentialPathIndex + 1;
+                cellDOMContainer.appendChild(numericStepTag);
+              }
+            }
+          } else {
+            cellDOMContainer.style.opacity = "0.12";
+            cellDOMContainer.style.background = "transparent";
+            cellDOMContainer.style.borderColor = "transparent";
+            
+            cellDOMContainer.addEventListener("mousedown", (e) => {
+              e.preventDefault();
+              if (appState.activeTool === "add") {
+                primaryDragStateFlag = true;
+                evaluateNodeStateManipulation(r, c);
+              }
+            });
+            cellDOMContainer.addEventListener("mouseenter", () => {
+              if (primaryDragStateFlag && appState.activeTool === "add") evaluateNodeStateManipulation(r, c);
+            });
+          }
+          renderingCoreLayer.appendChild(cellDOMContainer);
+        }
+      }
+
+      bindResponsiveTouchHandlers(renderingCoreLayer);
+      setTimeout(renderVectorTracePaths, 10);
+      synchronizeStatusPanelInterface();
+    }
+
+    function bindResponsiveTouchHandlers(targetGridContainer) {
+      targetGridContainer.addEventListener("touchstart", (e) => {
+        const touch = e.touches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (element && element.classList.contains("grid-node-cell")) {
+          const r = parseInt(element.getAttribute("data-row"));
+          const c = parseInt(element.getAttribute("data-col"));
+          if (!isNaN(r) && !isNaN(c)) {
+            primaryDragStateFlag = true;
+            structuralEraseModeFlag = appState.cells.has(ck(r, c)) && appState.activeTool === "erase";
+            evaluateNodeStateManipulation(r, c);
+          }
+        }
+      }, { passive: true });
+
+      targetGridContainer.addEventListener("touchmove", (e) => {
+        if (!primaryDragStateFlag) return;
+        const touch = e.touches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (element && element.classList.contains("grid-node-cell")) {
+          const r = parseInt(element.getAttribute("data-row"));
+          const c = parseInt(element.getAttribute("data-col"));
+          if (!isNaN(r) && !isNaN(c) && appState.activeTool !== "setstart") {
+            evaluateNodeStateManipulation(r, c);
+          }
+        }
+      }, { passive: true });
+    }
+
+    function calculateCellCenterRelativeCoordinates(targetRow, targetCol) {
+      const nodeElement = document.querySelector(`[data-row="${targetRow}"][data-col="${targetCol}"]`);
+      if (!nodeElement) return { x: 0, y: 0 };
+      
+      const viewportLayoutContainer = document.getElementById("gridViewport").getBoundingClientRect();
+      const elementBoundingBox = nodeElement.getBoundingClientRect();
+      
+      return {
+        x: (elementBoundingBox.left - viewportLayoutContainer.left) + (elementBoundingBox.width / 2),
+        y: (elementBoundingBox.top - viewportLayoutContainer.top) + (elementBoundingBox.height / 2)
+      };
+    }
+
+    function renderVectorTracePaths() {
+      const vectorCanvasRef = document.getElementById("vectorRouteCanvas");
+      vectorCanvasRef.innerHTML = "";
+      
+      if (!appState.solutionRoute || appState.solutionRoute.length <= 1) return;
+      const themeColorAccentValue = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+      
+      const definitionsLayer = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+      definitionsLayer.innerHTML = `
+        <filter id="premiumLaserGlow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="4" result="blurOut"></feGaussianBlur>
+          <feMerge>
+            <feMergeNode in="blurOut"></feMergeNode>
+            <feMergeNode in="SourceGraphic"></feMergeNode>
+          </feMerge>
+        </filter>
+      `;
+      vectorCanvasRef.appendChild(definitionsLayer);
+
+      for (let i = 0; i < appState.playbackStep; i++) {
+        if (i >= appState.solutionRoute.length - 1) break;
+        const coordA = calculateCellCenterRelativeCoordinates(appState.solutionRoute[i][0], appState.solutionRoute[i][1]);
+        const coordB = calculateCellCenterRelativeCoordinates(appState.solutionRoute[i+1][0], appState.solutionRoute[i+1][1]);
+
+        const overlayGlowBeam = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        overlayGlowBeam.setAttribute("x1", coordA.x); overlayGlowBeam.setAttribute("y1", coordA.y);
+        overlayGlowBeam.setAttribute("x2", coordB.x); overlayGlowBeam.setAttribute("y2", coordB.y);
+        overlayGlowBeam.setAttribute("stroke", themeColorAccentValue);
+        overlayGlowBeam.setAttribute("stroke-width", "8");
+        overlayGlowBeam.setAttribute("stroke-linecap", "round");
+        overlayGlowBeam.setAttribute("opacity", "0.18");
+        vectorCanvasRef.appendChild(overlayGlowBeam);
+
+        const primaryLaserCore = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        primaryLaserCore.setAttribute("x1", coordA.x); primaryLaserCore.setAttribute("y1", coordA.y);
+        primaryLaserCore.setAttribute("x2", coordB.x); primaryLaserCore.setAttribute("y2", coordB.y);
+        primaryLaserCore.setAttribute("stroke", themeColorAccentValue);
+        primaryLaserCore.setAttribute("stroke-width", "3");
+        primaryLaserCore.setAttribute("stroke-linecap", "round");
+        primaryLaserCore.setAttribute("filter", "url(#premiumLaserGlow)");
+        primaryLaserCore.setAttribute("opacity", "0.95");
+        vectorCanvasRef.appendChild(primaryLaserCore);
+      }
+
+      const currentTerminalNode = appState.solutionRoute[Math.min(appState.playbackStep, appState.solutionRoute.length - 1)];
+      if (currentTerminalNode) {
+        const terminalCoords = calculateCellCenterRelativeCoordinates(currentTerminalNode[0], currentTerminalNode[1]);
+        const visualPulsarCore = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        visualPulsarCore.setAttribute("cx", terminalCoords.x);
+        visualPulsarCore.setAttribute("cy", terminalCoords.y);
+        visualPulsarCore.setAttribute("r", "5");
+        visualPulsarCore.setAttribute("fill", "#ffffff");
+        visualPulsarCore.setAttribute("stroke", themeColorAccentValue);
+        visualPulsarCore.setAttribute("stroke-width", "2");
+        visualPulsarCore.setAttribute("filter", "url(#premiumLaserGlow)");
+        vectorCanvasRef.appendChild(visualPulsarCore);
+      }
+    }
+
+    /* ── RUNTIME ANIMATION SPEED INTERVAL CONTROLLER ────────── */
+    function initializePlaybackSequence(evaluatedStepsList) {
+      haltActiveAnimationIntervals();
+      appState.playbackStep = 0;
+      synchronizeDomGridCanvas();
+
+      playbackIntervalRef = setInterval(() => {
+        appState.playbackStep++;
+        synchronizeDomGridCanvas();
+        if (appState.playbackStep >= evaluatedStepsList.length - 1) clearInterval(playbackIntervalRef);
+      }, appState.playbackDelay);
+    }
+
+    function haltActiveAnimationIntervals() {
+      if (playbackIntervalRef) {
+        clearInterval(playbackIntervalRef);
+        playbackIntervalRef = null;
+      }
+    }
+
+    function restartPlaybackLoop() {
+      if (appState.solutionRoute && Array.isArray(appState.solutionRoute)) {
+        initializePlaybackSequence(appState.solutionRoute);
+      }
+    }
+
+    function modifyPlaybackDelay(inverseMetricSliderValue) {
+      appState.playbackDelay = 730 - parseInt(inverseMetricSliderValue);
+      if (appState.solutionRoute && playbackIntervalRef) {
+        haltActiveAnimationIntervals();
+        playbackIntervalRef = setInterval(() => {
+          appState.playbackStep++;
+          synchronizeDomGridCanvas();
+          if (appState.playbackStep >= appState.solutionRoute.length - 1) clearInterval(playbackIntervalRef);
+        }, appState.playbackDelay);
+      }
+    }
+
+    /* ── SYSTEM SOLVER AND INTERFACE SYNC EXECUTION STATIONS ── */
+    function invokeComputationalSolver() {
+      if (!appState.startCell) {
+        appState.engineStatus = "void_anchor";
+        synchronizeStatusPanelInterface();
+        return;
+      }
+
+      haltActiveAnimationIntervals();
+      appState.solutionRoute = null;
+      appState.playbackStep = 0;
+      appState.engineStatus = "processing";
+      
+      document.getElementById("solveButton").disabled = true;
+      document.getElementById("solveButton").innerText = "ANALYZING...";
+      synchronizeStatusPanelInterface();
+
+      setTimeout(() => {
+        const computationalOutputResult = processPathMatrix(appState.cells, appState.startCell);
+        document.getElementById("solveButton").disabled = false;
+        document.getElementById("solveButton").innerText = "Solve Puzzle";
+
+        if (Array.isArray(computationalOutputResult)) {
+          appState.solutionRoute = computationalOutputResult;
+          appState.engineStatus = "complete";
+          document.getElementById("replayButton").style.display = "inline-flex";
+          document.getElementById("speedControlBox").style.display = "flex";
+          initializePlaybackSequence(computationalOutputResult);
+        } else {
+          appState.engineStatus = computationalOutputResult === "timeout" ? "timeout" : "failed";
+          document.getElementById("replayButton").style.display = "none";
+          document.getElementById("speedControlBox").style.display = "none";
+          synchronizeDomGridCanvas();
+        }
+      }, 80);
+    }
+
+    function synchronizeStatusPanelInterface() {
+      const displayPanelContainer = document.getElementById("statusBarContainer");
+      displayPanelContainer.innerHTML = "";
+
+      let statusConfig = { lampColor: "transparent", feedbackText: "" };
+      switch (appState.engineStatus) {
+        case "processing":
+          statusConfig = { lampColor: "var(--text-muted)", feedbackText: "COMPUTING PATHS MAP MATRIX..." };
+          break;
+        case "complete":
+          statusConfig = { lampColor: "#30d158", feedbackText: `SUCCESS — SOLVED PATH IN ${appState.solutionRoute.length} STEPS` };
+          break;
+        case "failed":
+          statusConfig = { lampColor: "#ff453a", feedbackText: "FAILURE — GRID CONTAINS ISOLATED STRUCTURAL VOIDS" };
+          break;
+        case "timeout":
+          statusConfig = { lampColor: "#ff9f0a", feedbackText: "TIMEOUT — GRAPH PROCESSING TIME OVER LIMIT" };
+          break;
+        case "void_anchor":
+          statusConfig = { lampColor: "var(--primary)", feedbackText: "ERROR — WORKSPACE ANCHOR INITIALIZATION VOID" };
+          break;
+      }
+
+      if (statusConfig.feedbackText) {
+        const structuralLampNode = document.createElement("span");
+        structuralLampNode.className = "status-indicator-lamp";
+        structuralLampNode.style.backgroundColor = statusConfig.lampColor;
+        if (appState.engineStatus === "complete" || appState.engineStatus === "processing") {
+          structuralLampNode.style.boxShadow = `0 0 10px ${statusConfig.lampColor}`;
+        }
+        displayPanelContainer.appendChild(structuralLampNode);
+
+        const textualStatusNode = document.createElement("span");
+        textualStatusNode.style.color = statusConfig.lampColor;
+        textualStatusNode.innerText = statusConfig.feedbackText;
+        displayPanelContainer.appendChild(textualStatusNode);
+      }
+    }
+  </script>
+</body>
+</html>
