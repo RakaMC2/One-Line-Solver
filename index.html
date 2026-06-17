@@ -1,0 +1,2348 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark" data-accent="blue">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevTools</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+
+/* ═══ ACCENT / THEME ═══ */
+:root{
+  --sans:'Inter',sans-serif; --mono:'JetBrains Mono',monospace; --r:10px;
+  --a-blue:#5e9eff;   --g-blue:rgba(94,158,255,.30);  --gr-blue:linear-gradient(135deg,#5e9eff,#3b6fd4);
+  --a-purple:#bf5af2; --g-purple:rgba(191,90,242,.30); --gr-purple:linear-gradient(135deg,#bf5af2,#5e5ce6);
+  --a-cyan:#00ded3;   --g-cyan:rgba(0,222,211,.30);   --gr-cyan:linear-gradient(135deg,#00ded3,#007aff);
+  --a-green:#30d158;  --g-green:rgba(48,209,88,.30);  --gr-green:linear-gradient(135deg,#30d158,#05a660);
+  --a-amber:#ff9f0a;  --g-amber:rgba(255,159,10,.30); --gr-amber:linear-gradient(135deg,#ff9f0a,#ff6b00);
+  --a-red:#ff453a;    --g-red:rgba(255,69,58,.30);    --gr-red:linear-gradient(135deg,#ff453a,#c0392b);
+  --a-pink:#ff2d78;   --g-pink:rgba(255,45,120,.30);  --gr-pink:linear-gradient(135deg,#ff2d78,#c2185b);
+  --a-teal:#30d5c8;   --g-teal:rgba(48,213,200,.30);  --gr-teal:linear-gradient(135deg,#30d5c8,#009688);
+}
+[data-accent="blue"]  {--P:var(--a-blue);  --PG:var(--g-blue);  --PGR:var(--gr-blue);}
+[data-accent="purple"]{--P:var(--a-purple);--PG:var(--g-purple);--PGR:var(--gr-purple);}
+[data-accent="cyan"]  {--P:var(--a-cyan);  --PG:var(--g-cyan);  --PGR:var(--gr-cyan);}
+[data-accent="green"] {--P:var(--a-green); --PG:var(--g-green); --PGR:var(--gr-green);}
+[data-accent="amber"] {--P:var(--a-amber); --PG:var(--g-amber); --PGR:var(--gr-amber);}
+[data-accent="red"]   {--P:var(--a-red);   --PG:var(--g-red);   --PGR:var(--gr-red);}
+[data-accent="pink"]  {--P:var(--a-pink);  --PG:var(--g-pink);  --PGR:var(--gr-pink);}
+[data-accent="teal"]  {--P:var(--a-teal);  --PG:var(--g-teal);  --PGR:var(--gr-teal);}
+
+[data-theme="dark"]{
+  --bg:#0d0f14; --sf:#141720; --sf2:#1c2030; --sf3:#222638;
+  --bd:rgba(255,255,255,.08); --bd2:rgba(255,255,255,.14);
+  --tx:#e2e8f0; --tx2:#94a3b8; --tx3:#4a5568;
+  --sh:0 16px 48px rgba(0,0,0,.55);
+  --editor-bg:#0a0c10;
+  --mc-sim-bg:#1a0000;
+}
+[data-theme="light"]{
+  --bg:#dde1ef; --sf:rgba(255,255,255,.80); --sf2:rgba(255,255,255,.60); --sf3:#fff;
+  --bd:rgba(0,0,0,.09); --bd2:rgba(0,0,0,.16);
+  --tx:#0a0e1e; --tx2:#48526a; --tx3:#8899b0;
+  --sh:0 8px 32px rgba(0,0,30,.12);
+  --editor-bg:#f4f6fc;
+  --mc-sim-bg:#2c2c2c;
+}
+
+/* ═══ BASE ═══ */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);height:100vh;display:flex;flex-direction:column;overflow:hidden;transition:background .25s,color .25s;}
+svg{display:inline-block;vertical-align:middle;flex-shrink:0;}
+
+/* ═══ NAV ═══ */
+.app-nav{
+  display:flex;align-items:center;height:52px;padding:0 16px;gap:0;flex-shrink:0;
+  background:var(--sf);border-bottom:1px solid var(--bd);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);position:relative;z-index:20;
+}
+.logo{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:700;letter-spacing:-.02em;margin-right:24px;flex-shrink:0;}
+.logo-icon{
+  width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  background:var(--PGR);box-shadow:0 0 14px var(--PG);transition:box-shadow .3s;
+}
+
+/* Tool Dropdown */
+.tldd { position: relative; display: flex; align-items: center; }
+.tldd-btn { 
+  display: flex; align-items: center; gap: 8px; background: transparent; 
+  border: 1px solid transparent; border-radius: var(--r); padding: 0 12px; height: 38px; 
+  font-family: var(--sans); font-size: 14px; font-weight: 600; color: var(--tx); 
+  cursor: pointer; transition: all .15s; 
+}
+.tldd-btn:hover, .tldd-btn.open { background: var(--sf2); border-color: var(--bd); }
+.tldd-menu { 
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 60; 
+  background: var(--sf); border: 1px solid var(--bd2); border-radius: var(--r); 
+  padding: 6px; min-width: 250px; display: none; box-shadow: var(--sh);
+}
+.tldd-menu.open { display: block; }
+.topt { 
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 8px; 
+  font-size: 13px; font-weight: 500; cursor: pointer; color: var(--tx2); transition: background .12s; 
+}
+.topt:hover { background: var(--sf2); color: var(--tx); }
+.topt.sel { background: color-mix(in srgb, var(--P) 12%, transparent); color: var(--tx); font-weight: 600; }
+.topt-icon { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
+
+.nav-r{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0;}
+
+/* theme pill */
+.th-toggle{
+  display:flex;align-items:center;background:var(--sf2);border:1px solid var(--bd);
+  border-radius:99px;padding:3px;gap:2px;cursor:pointer;transition:border-color .2s;
+}
+.th-toggle:hover{border-color:var(--P);}
+.th-slot{
+  width:28px;height:28px;border-radius:99px;display:flex;align-items:center;justify-content:center;
+  color:var(--tx3);transition:all .22s cubic-bezier(.34,1.56,.64,1);
+}
+.th-slot.on{background:var(--PGR);color:#fff;box-shadow:0 0 8px var(--PG);}
+
+/* settings btn */
+.btn-cog{
+  width:36px;height:36px;border-radius:9px;border:1px solid var(--bd);background:var(--sf2);
+  color:var(--tx3);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .18s cubic-bezier(.34,1.56,.64,1);
+}
+.btn-cog:hover{border-color:var(--P);color:var(--P);box-shadow:0 0 12px var(--PG);}
+
+/* ═══ SETTINGS DRAWER ═══ */
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;opacity:0;pointer-events:none;transition:opacity .3s;}
+.backdrop.open{opacity:1;pointer-events:all;}
+.drawer{
+  position:fixed;right:0;top:0;bottom:0;width:min(300px,88vw);z-index:101;
+  background:var(--sf);border-left:1px solid var(--bd);
+  transform:translateX(100%);transition:transform .36s cubic-bezier(.16,1,.3,1);
+  display:flex;flex-direction:column;box-shadow:-8px 0 40px rgba(0,0,0,.35);
+  overflow-y:auto;
+}
+.drawer.open{transform:translateX(0);}
+.drawer-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--bd);flex-shrink:0;}
+.drawer-title{font-size:15px;font-weight:700;}
+.btn-xclose{
+  width:30px;height:30px;border-radius:50%;border:1px solid var(--bd);background:var(--sf2);
+  color:var(--tx3);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .2s cubic-bezier(.34,1.56,.64,1);
+}
+.btn-xclose:hover{transform:rotate(90deg);background:var(--bd2);color:var(--tx);}
+.drawer-sec{padding:14px 18px;border-bottom:1px solid var(--bd);}
+.drawer-sec-ttl{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px;}
+.accent-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.accent-item{
+  display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;
+  padding:8px 4px;border-radius:10px;border:2px solid transparent;
+  transition:all .2s cubic-bezier(.34,1.56,.64,1);
+}
+.accent-item:hover{background:var(--sf2);}
+.accent-item.on{border-color:var(--P);background:var(--sf2);box-shadow:0 0 12px var(--PG);}
+.accent-dot{width:28px;height:28px;border-radius:50%;}
+.accent-nm{font-size:10px;font-weight:600;color:var(--tx3);}
+.accent-item.on .accent-nm{color:var(--P);}
+
+/* ═══ PAGES ═══ */
+.page{display:none;flex:1;flex-direction:column;min-height:0;overflow:hidden;}
+.page.active{display:flex;}
+
+/* ═══ SHARED BUTTONS ═══ */
+.btn{
+  font-family:var(--sans);font-size:13px;font-weight:500;
+  padding:0 13px;height:34px;border-radius:var(--r);border:none;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+  transition:all .15s;flex-shrink:0;
+}
+.btn:active{transform:scale(.96);}
+.btn:disabled{opacity:.38;cursor:not-allowed;}
+.btn:disabled:active{transform:none;}
+.bp{background:var(--PGR);color:#fff;box-shadow:0 2px 12px var(--PG);}
+.bp:not(:disabled):hover{filter:brightness(1.1);}
+.bg{background:var(--sf2);color:var(--tx2);border:1px solid var(--bd);}
+.bg:not(:disabled):hover{background:var(--sf3);color:var(--tx);border-color:var(--bd2);}
+.bd-{background:rgba(255,69,58,.12);color:#ff453a;border:1px solid rgba(255,69,58,.22);}
+.bd-:not(:disabled):hover{background:rgba(255,69,58,.22);}
+.bok{background:rgba(48,209,88,.12);color:#30d158;border:1px solid rgba(48,209,88,.22);}
+.bok:not(:disabled):hover{background:rgba(48,209,88,.22);}
+
+/* Switch / Toggle */
+.switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--sf2); transition: .3s; border-radius: 34px; border: 1px solid var(--bd); }
+.slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: var(--tx2); transition: .3s; border-radius: 50%; }
+input:checked + .slider { background-color: var(--P); border-color: var(--P); }
+input:checked + .slider:before { transform: translateX(16px); background-color: #fff; }
+
+/* ═══════════════════════════════════════
+   PRETTIER PAGE
+═══════════════════════════════════════ */
+.ptop{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 16px;background:var(--sf);border-bottom:1px solid var(--bd);
+  gap:10px;flex-wrap:wrap;flex-shrink:0;
+}
+.ptop-l,.ptop-r{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+
+/* lang dropdown */
+.ldd{position:relative;}
+.lbtn{
+  display:flex;align-items:center;gap:7px;
+  background:var(--sf2);border:1px solid var(--bd);
+  border-radius:var(--r);padding:0 11px;height:34px;
+  font-family:var(--sans);font-size:13px;font-weight:500;color:var(--tx);
+  cursor:pointer;transition:border-color .15s;white-space:nowrap;min-width:136px;
+}
+.lbtn:hover,.lbtn.open{border-color:var(--P);}
+.ldot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.lchev{margin-left:auto;color:var(--tx3);transition:transform .15s;}
+.lbtn.open .lchev{transform:rotate(180deg);}
+.lmenu{
+  position:absolute;top:calc(100% + 5px);left:0;z-index:60;
+  background:var(--sf);border:1px solid var(--bd2);
+  border-radius:var(--r);padding:4px;min-width:175px;display:none;
+  box-shadow:var(--sh);
+}
+.lmenu.open{display:block;}
+.lopt{
+  display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:7px;
+  font-size:13px;font-weight:500;cursor:pointer;color:var(--tx2);transition:background .12s;
+}
+.lopt:hover{background:var(--sf2);color:var(--tx);}
+.lopt.sel{background:color-mix(in srgb, var(--P) 12%, transparent);color:var(--tx);}
+.lext{margin-left:auto;font-size:11px;color:var(--tx3);font-family:var(--mono);}
+
+.isel{
+  background:var(--sf2);border:1px solid var(--bd);color:var(--tx2);
+  font-family:var(--sans);font-size:13px;padding:0 9px;border-radius:var(--r);
+  cursor:pointer;outline:none;height:34px;transition:border-color .15s;
+}
+.isel:hover{border-color:var(--P);}
+
+/* error banner */
+.errbanner{
+  padding:9px 16px;background:rgba(255,69,58,.10);border-bottom:1px solid rgba(255,69,58,.20);
+  font-family:var(--mono);font-size:12px;color:#ff453a;
+  display:none;align-items:center;gap:8px;flex-shrink:0;
+}
+.errbanner.on{display:flex;}
+
+/* tab bar */
+.ptab{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:7px 16px;background:var(--sf);border-bottom:1px solid var(--bd);
+  flex-shrink:0;gap:10px;flex-wrap:wrap;
+}
+.mtabs{display:flex;background:var(--bg);border:1px solid var(--bd);border-radius:var(--r);padding:3px;gap:2px;}
+.mtab{
+  font-family:var(--sans);font-size:12px;font-weight:500;
+  padding:4px 12px;border-radius:7px;border:none;cursor:pointer;
+  color:var(--tx3);background:transparent;transition:all .15s;
+  display:flex;align-items:center;gap:5px;
+}
+.mtab.active{background:var(--sf2);color:var(--tx);}
+.mtab:hover:not(.active){color:var(--tx2);}
+
+/* editor */
+.ewrap{flex:1;display:flex;flex-direction:column;position:relative;min-height:0;}
+.dropov{
+  position:absolute;inset:0;background:rgba(10,12,16,.88);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;z-index:20;opacity:0;pointer-events:none;transition:opacity .2s;
+}
+[data-theme="light"] .dropov{background:rgba(200,205,220,.88);}
+.dropov.on{opacity:1;pointer-events:all;}
+.dropov svg{color:var(--P);}
+.dropov p{color:var(--tx2);font-size:14px;font-weight:500;}
+
+.ipane{flex:1;display:flex;flex-direction:column;min-height:0;}
+#pinput{
+  flex:1;background:var(--editor-bg);border:none;outline:none;resize:none;
+  padding:18px 22px;font-family:var(--mono);font-size:13px;line-height:1.75;
+  color:var(--tx);tab-size:2;min-height:0;transition:background .25s,color .25s;
+}
+#pinput::placeholder{color:var(--tx3);}
+
+.opane{
+  flex:1;overflow:auto;background:var(--editor-bg);
+  padding:18px 22px;display:none;min-height:0;
+  transition:background .25s;
+}
+.codeout{
+  font-family:var(--mono);font-size:13px;line-height:1.75;
+  white-space:pre-wrap;word-break:break-all;
+}
+.oacts{
+  display:none;gap:8px;justify-content:flex-end;
+  padding:9px 16px;border-top:1px solid var(--bd);
+  background:var(--sf);flex-shrink:0;
+}
+.oacts.on{display:flex;}
+
+/* status */
+.pstat{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 16px;background:var(--sf);border-top:1px solid var(--bd);
+  flex-shrink:0;flex-wrap:wrap;gap:8px;
+}
+.spill{
+  display:inline-flex;align-items:center;gap:5px;padding:2px 9px;
+  border-radius:99px;font-size:11px;font-weight:700;letter-spacing:.04em;
+}
+.sok {background:rgba(48,209,88,.14); color:#30d158;}
+.serr{background:rgba(255,69,58,.14); color:#ff453a;}
+.sid {background:var(--sf2);          color:var(--tx3);}
+
+/* ═══ SYNTAX TOKENS ═══ */
+.jk {color:#5e9eff;} .js_ {color:#4ec994;} .jn {color:#f0c060;}
+.jb {color:#c084fc;} .jnu {color:#f07070;} .jp {color:#475569;}
+.tk {color:#c084fc;} .ts_ {color:#4ec994;} .ttp{color:#4ec994;}
+.tn {color:#f0c060;} .tc {color:#3d4a5e;font-style:italic;} .tf {color:#22d3ee;}
+.tty{color:#fb923c;} .td {color:#fb923c;} .top{color:#64748b;}
+.ch {color:#f0c060;} .cs {color:#22d3ee;} .cv {color:#4ec994;}
+.ca {color:#c084fc;} .cc {color:#3d4a5e;font-style:italic;}
+.hg {color:#5e9eff;} .ha {color:#fb923c;} .hv {color:#4ec994;}
+.hc {color:#3d4a5e;font-style:italic;} .hd {color:#c084fc;}
+[data-theme="light"] .jk {color:#1a58d0;} [data-theme="light"] .js_ {color:#1a7a50;}
+[data-theme="light"] .jn {color:#a05c00;} [data-theme="light"] .jb {color:#7030a0;}
+[data-theme="light"] .jnu{color:#cc2222;} [data-theme="light"] .jp {color:#6a7a8a;}
+[data-theme="light"] .tk {color:#7030a0;} [data-theme="light"] .ts_ {color:#1a7a50;}
+[data-theme="light"] .ttp{color:#1a7a50;} [data-theme="light"] .tn {color:#a05c00;}
+[data-theme="light"] .tc {color:#8899aa;} [data-theme="light"] .tf {color:#006b8a;}
+[data-theme="light"] .tty{color:#a05020;} [data-theme="light"] .td {color:#a05020;}
+[data-theme="light"] .top{color:#445566;} [data-theme="light"] .ch {color:#a05c00;}
+[data-theme="light"] .cs {color:#006b8a;} [data-theme="light"] .cv {color:#1a7a50;}
+[data-theme="light"] .ca {color:#7030a0;} [data-theme="light"] .cc {color:#8899aa;}
+[data-theme="light"] .hg {color:#1a58d0;} [data-theme="light"] .ha {color:#a05020;}
+[data-theme="light"] .hv {color:#1a7a50;} [data-theme="light"] .hc {color:#8899aa;}
+[data-theme="light"] .hd {color:#7030a0;}
+[data-theme="light"] #pinput{background:#f0f2fa;color:#0a0e1e;}
+[data-theme="light"] .opane{background:#f0f2fa;}
+
+/* ═══════════════════════════════════════
+   IMAGE CONVERTER PAGE
+═══════════════════════════════════════ */
+.imghdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 16px;background:var(--sf);border-bottom:1px solid var(--bd);
+  gap:10px;flex-wrap:wrap;flex-shrink:0;
+}
+.imgtitle{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;}
+.fmtbadge{
+  font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--tx3);
+  background:var(--sf2);border:1px solid var(--bd);padding:2px 9px;border-radius:99px;
+}
+.fmtbadge span{color:var(--P);}
+.fmtbar{
+  display:flex;align-items:center;gap:14px;padding:9px 16px;
+  background:var(--sf);border-bottom:1px solid var(--bd);flex-wrap:wrap;flex-shrink:0;
+}
+.fmtgrp{display:flex;align-items:center;gap:7px;}
+.fmtlbl{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--tx3);text-transform:uppercase;}
+.fmtsel{
+  background:var(--sf2);border:1px solid var(--bd);color:var(--tx);
+  font-family:var(--sans);font-size:13px;font-weight:500;
+  padding:0 10px;height:32px;border-radius:var(--r);cursor:pointer;outline:none;
+  transition:border-color .15s;
+}
+.fmtsel:hover{border-color:var(--P);}
+.qwrap{display:flex;align-items:center;gap:8px;margin-left:auto;}
+.qlbl{font-size:11px;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+#qr{
+  width:80px;height:4px;-webkit-appearance:none;appearance:none;
+  background:var(--bd2);border-radius:99px;outline:none;cursor:pointer;
+}
+#qr::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+  background:var(--P);box-shadow:0 0 6px var(--PG);cursor:pointer;
+}
+#qv{font-size:12px;font-family:var(--mono);color:var(--tx2);min-width:28px;}
+
+/* dropzone */
+.dz{
+  border:2px dashed var(--bd2);border-radius:14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;padding:28px 24px;cursor:pointer;
+  transition:border-color .2s,background .2s;text-align:center;position:relative;
+  margin:14px 16px 0;flex-shrink:0;
+}
+.dz:hover,.dz.over{border-color:var(--P);background:color-mix(in srgb,var(--P) 6%,transparent);}
+.dz input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.dzico{
+  width:42px;height:42px;background:var(--sf2);border-radius:11px;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--P);border:1px solid var(--bd);
+}
+.dz h2{font-size:14px;font-weight:600;}
+.dz p{font-size:12px;color:var(--tx3);line-height:1.5;}
+.dzhint{font-size:12px;color:var(--P);font-weight:500;}
+
+.flist{flex:1;overflow-y:auto;padding:10px 16px 14px;display:flex;flex-direction:column;gap:7px;min-height:0;}
+.emptyhint{text-align:center;padding:22px;font-size:13px;color:var(--tx3);display:none;}
+.emptyhint.on{display:block;}
+.fitem{
+  background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);
+  padding:10px 12px;display:flex;align-items:center;gap:10px;
+  transition:border-color .15s;
+}
+.fitem:hover{border-color:var(--bd2);}
+.fthumb{width:40px;height:40px;border-radius:7px;object-fit:cover;border:1px solid var(--bd);flex-shrink:0;}
+.ftph{
+  width:40px;height:40px;border-radius:7px;background:var(--sf2);
+  border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;
+  color:var(--tx3);flex-shrink:0;
+}
+.finfo{flex:1;min-width:0;}
+.fname{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fmeta{font-size:11px;color:var(--tx3);font-family:var(--mono);margin-top:2px;}
+.fst{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;flex-shrink:0;}
+.stq  {background:var(--sf2);color:var(--tx3);border:1px solid var(--bd);}
+.stcvt{background:rgba(94,158,255,.12);color:#5e9eff;border:1px solid rgba(94,158,255,.2);}
+.stok {background:rgba(48,209,88,.12);color:#30d158;border:1px solid rgba(48,209,88,.2);}
+.sterr{background:rgba(255,69,58,.12);color:#ff453a;border:1px solid rgba(255,69,58,.2);}
+.facts{display:flex;gap:5px;flex-shrink:0;}
+
+@keyframes spin{to{transform:rotate(360deg);}}
+.spin{width:11px;height:11px;border:2px solid rgba(94,158,255,.25);border-top-color:#5e9eff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;}
+
+.imgftr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:7px 16px;background:var(--sf);border-top:1px solid var(--bd);
+  flex-wrap:wrap;gap:8px;flex-shrink:0;
+}
+.spill2{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--tx3);}
+.sdot{width:6px;height:6px;border-radius:50%;}
+
+/* ═══ MEDIA DOWNLOADER ═══ */
+.dl-wrap { padding: 40px 30px; max-width: 650px; margin: 0 auto; width: 100%; display:flex; flex-direction: column; gap: 24px; overflow-y: auto; }
+.dl-header { text-align: center; margin-bottom: 10px; }
+.dl-header h2 { font-size: 22px; font-weight: 700; margin-top: 14px; }
+.dl-header p { color: var(--tx3); font-size: 14px; margin-top: 6px; }
+.dl-input-group { display: flex; gap: 12px; }
+.dl-input { flex: 1; padding: 0 18px; height: 48px; border-radius: var(--r); background: var(--sf2); border: 1px solid var(--bd); color: var(--tx); font-family: var(--sans); font-size: 14px; transition: border-color .2s; outline: none; }
+.dl-input:focus { border-color: var(--P); box-shadow: 0 0 0 3px color-mix(in srgb, var(--P) 15%, transparent); }
+.dl-btn { height: 48px; padding: 0 28px; font-size: 14px; font-weight: 600; }
+.dl-card { display: flex; gap: 20px; background: var(--sf); border: 1px solid var(--bd); padding: 20px; border-radius: var(--r); margin-top: 10px; box-shadow: var(--sh); animation: fadeUp .3s ease; }
+.dl-thumb { width: 120px; height: 120px; border-radius: 10px; object-fit: cover; background: var(--sf2); flex-shrink: 0; }
+.dl-info { display: flex; flex-direction: column; justify-content: center; flex: 1; }
+.dl-info h4 { font-size: 16px; margin-bottom: 6px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.dl-info p { font-size: 13px; color: var(--tx3); margin-bottom: 14px; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 600px) {
+  .dl-input-group { flex-direction: column; }
+  .dl-btn { width: 100%; }
+  .dl-card { flex-direction: column; align-items: center; text-align: center; }
+}
+
+/* ═══ MANIFEST GENERATOR v3 ═══ */
+.m-layout { display: flex; flex: 1; min-height: 0; overflow: hidden; flex-direction: row; }
+@media (max-width: 900px) { .m-layout { flex-direction: column; overflow: auto; } }
+.m-tabs-hdr { display: flex; background: var(--sf); border-bottom: 1px solid var(--bd); padding: 4px 12px; gap: 4px; overflow-x: auto; flex-shrink: 0; }
+.m-tab-btn { background: transparent; border: none; color: var(--tx3); padding: 8px 14px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; transition: all .15s; white-space: nowrap; }
+.m-tab-btn.active { background: var(--sf2); color: var(--tx); }
+.m-form { flex: 1.2; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; border-right: 1px solid var(--bd); background: var(--bg); min-height: 0; }
+.m-tab-content { display: none; flex-direction: column; gap: 16px; }
+.m-tab-content.active { display: flex; }
+.m-output { flex: 1; background: var(--editor-bg); padding: 24px; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
+.m-group { display: flex; flex-direction: column; gap: 6px; }
+.m-group label { font-size: 11px; font-weight: 600; color: var(--tx3); text-transform: uppercase; letter-spacing: .05em; }
+.m-input, .m-select, .m-textarea { width: 100%; height: 38px; padding: 0 12px; border-radius: 8px; background: var(--sf2); border: 1px solid var(--bd); color: var(--tx); font-family: var(--sans); font-size: 13px; outline: none; transition: border-color .15s; }
+.m-textarea { height: 80px; padding: 10px 12px; resize: none; }
+.m-input:focus, .m-select:focus, .m-textarea:focus { border-color: var(--P); }
+.m-input[readonly] { color: var(--tx3); cursor: not-allowed; }
+.uuid-group { display: flex; gap: 8px; }
+.uuid-group .m-input { font-family: var(--mono); font-size: 12px; }
+.caps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; padding: 5px 0; }
+.cap-item { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; user-select: none; color: var(--tx2); }
+.cap-item input { accent-color: var(--P); width: 15px; height: 15px; }
+
+/* Subpack & Settings Builder cards */
+.m-card-list { display: flex; flex-direction: column; gap: 10px; }
+.m-card { background: var(--sf); border: 1px solid var(--bd); border-radius: var(--r); padding: 12px; display: flex; flex-direction: column; gap: 10px; position: relative; animation: fadeUp 0.25s ease; }
+.m-card-hdr { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--bd); padding-bottom: 8px; font-size: 12px; font-weight: 600; color: var(--P); }
+.m-card-body { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.m-card-body.full { grid-template-columns: 1fr; }
+
+/* ═══ LOADING MESSAGES & SPLASH TOOLS ═══ */
+.tool-grid { display: grid; grid-template-columns: 1.2fr 1fr; flex: 1; min-height: 0; overflow: hidden; }
+@media (max-width: 900px) { .tool-grid { grid-template-columns: 1fr; overflow-y: auto; } }
+.tool-sidebar { display: flex; flex-direction: column; gap: 16px; padding: 20px; border-right: 1px solid var(--bd); background: var(--bg); overflow-y: auto; }
+.tool-preview { display: flex; flex-direction: column; padding: 24px; background: var(--editor-bg); overflow-y: auto; gap: 20px; }
+.search-bar { position: relative; display: flex; width: 100%; }
+.search-input { width: 100%; height: 38px; padding-left: 36px; padding-right: 12px; border-radius: var(--r); background: var(--sf2); border: 1px solid var(--bd); color: var(--tx); font-size: 13px; outline: none; }
+.search-input:focus { border-color: var(--P); }
+.search-icon { position: absolute; left: 12px; top: 12px; color: var(--tx3); }
+.msg-list { display: flex; flex-direction: column; gap: 8px; margin-top: 5px; }
+.msg-item { background: var(--sf); border: 1px solid var(--bd); border-radius: var(--r); padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; transition: border-color 0.15s; }
+.msg-item:hover { border-color: var(--bd2); }
+.msg-text { font-size: 13px; font-family: var(--mono); color: var(--tx2); line-height: 1.5; word-break: break-all; }
+.preset-badge { font-size: 10px; font-weight: 600; color: var(--P); background: var(--PG); padding: 2px 6px; border-radius: 4px; flex-shrink: 0; }
+
+/* Minecraft Loading Simulator */
+.mc-sim-wrap { background: var(--mc-sim-bg); border: 3px solid #000; border-radius: 12px; padding: 30px; display: flex; flex-direction: column; justify-content: space-between; height: 280px; position: relative; box-shadow: inset 0 0 100px rgba(0,0,0,0.8); overflow: hidden; }
+.mc-logo-area { display: flex; justify-content: center; align-items: center; margin-top: 20px; }
+.mc-logo-text { font-family: var(--mono); font-size: 24px; font-weight: 900; letter-spacing: 2px; text-shadow: 3px 3px 0 #000; color: #ff5555; text-transform: uppercase; }
+.mc-loading-bar-wrap { width: 100%; height: 16px; background: #3c3c3c; border: 2px solid #5a5a5a; padding: 2px; border-radius: 2px; margin-bottom: 24px; position: relative; }
+.mc-loading-bar-fill { height: 100%; width: 0%; background: #ff5555; transition: width 0.1s linear; }
+.mc-loading-text { font-family: var(--sans); font-size: 13px; color: #fff; text-align: center; text-shadow: 2px 2px 0 #000; word-break: break-all; padding: 0 10px; margin-bottom: 5px; }
+
+/* Minecraft Splash Simulator */
+.mc-splash-sim { background: #141414; border: 3px solid #000; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 320px; position: relative; overflow: hidden; box-shadow: inset 0 0 50px rgba(0,0,0,0.9); }
+.mc-panorama-bg { position: absolute; inset: 0; background: radial-gradient(circle, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.9) 100%); z-index: 1; }
+.mc-splash-logo-wrap { position: relative; z-index: 2; text-align: center; transform: scale(0.9); }
+.mc-title-img { font-family: var(--mono); font-size: 34px; font-weight: 900; letter-spacing: 4px; color: #fff; text-shadow: 4px 4px 0px #3f3f3f, 6px 6px 0px #000; margin-bottom: 15px; }
+.mc-splash-text { 
+  position: absolute; right: -25px; bottom: -5px; font-family: var(--mono); font-size: 16px; font-weight: 900; color: #ffff55; 
+  text-shadow: 2px 2px 0px #3f3f00; transform: rotate(-20deg); animation: splashBounce 0.4s ease-in-out infinite alternate; 
+  white-space: nowrap; z-index: 5;
+}
+@keyframes splashBounce {
+  from { transform: rotate(-20deg) scale(0.95); }
+  to { transform: rotate(-20deg) scale(1.15); }
+}
+
+</style>
+</head>
+<body>
+
+<!-- SVG Sprites -->
+<svg width="0" height="0" style="position:absolute;pointer-events:none">
+<defs>
+  <symbol id="ic-code" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="6 7 2 10 6 13"/><polyline points="14 7 18 10 14 13"/><line x1="11" y1="4" x2="9" y2="16"/>
+  </symbol>
+  <symbol id="ic-img" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="2" y="2" width="16" height="16" rx="2"/><circle cx="7" cy="7" r="1.5"/><path d="M2 13l4-4 3 3 3-3 4 4"/>
+  </symbol>
+  <symbol id="ic-sun" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+    <circle cx="10" cy="10" r="3.5"/>
+    <line x1="10" y1="1.5" x2="10" y2="3.5"/><line x1="10" y1="16.5" x2="10" y2="18.5"/>
+    <line x1="1.5" y1="10" x2="3.5" y2="10"/><line x1="16.5" y1="10" x2="18.5" y2="10"/>
+    <line x1="4" y1="4" x2="5.5" y2="5.5"/><line x1="14.5" y1="14.5" x2="16" y2="16"/>
+    <line x1="4" y1="16" x2="5.5" y2="14.5"/><line x1="14.5" y1="5.5" x2="16" y2="4"/>
+  </symbol>
+  <symbol id="ic-moon" viewBox="0 0 20 20" fill="currentColor" stroke="none">
+    <path d="M10 3a7 7 0 1 0 7 7 5 5 0 0 1-7-7Z" opacity=".9"/>
+  </symbol>
+  <symbol id="ic-cog" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="10" cy="10" r="3"/>
+    <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M4.2 15.8l1.4-1.4M14.4 5.6l1.4-1.4"/>
+  </symbol>
+  <symbol id="ic-x" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+    <line x1="5" y1="5" x2="15" y2="15"/><line x1="15" y1="5" x2="5" y2="15"/>
+  </symbol>
+  <symbol id="ic-up" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 14v2a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-2"/>
+    <polyline points="7 8 10 5 13 8"/><line x1="10" y1="5" x2="10" y2="14"/>
+  </symbol>
+  <symbol id="ic-dl" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 14v2a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-2"/>
+    <polyline points="7 10 10 13 13 10"/><line x1="10" y1="13" x2="10" y2="4"/>
+  </symbol>
+  <symbol id="ic-dlall" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 14v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/>
+    <polyline points="7 9 10 12 13 9"/><line x1="10" y1="12" x2="10" y2="3"/>
+    <line x1="3" y1="17" x2="17" y2="17"/>
+  </symbol>
+  <symbol id="ic-trash" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="5 7 15 7"/><path d="M8 7V5h4v2"/><path d="M6 7l1 10h6l1-10"/>
+  </symbol>
+  <symbol id="ic-copy" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="7" y="7" width="10" height="12" rx="2"/>
+    <path d="M13 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>
+  </symbol>
+  <symbol id="ic-paste" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="3" width="14" height="14" rx="2"/>
+    <line x1="10" y1="7" x2="10" y2="13"/><polyline points="7 10 10 13 13 10"/>
+  </symbol>
+  <symbol id="ic-wand" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m3.5 16.5 9-9"/><path d="M13 4l3 3"/><path d="M3 7l1-1"/><path d="M7 3l-1 1"/>
+    <circle cx="15" cy="5" r="2.5"/>
+  </symbol>
+  <symbol id="ic-zip" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 4h8l4 4v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>
+    <polyline points="12 4 12 8 16 8"/>
+    <line x1="10" y1="11" x2="10" y2="11"/><line x1="10" y1="13" x2="10" y2="13"/><line x1="10" y1="15" x2="10" y2="15"/>
+  </symbol>
+  <symbol id="ic-edit" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 16h12"/><path d="M13.5 4.5a2.12 2.12 0 0 1 3 3L6 18l-4 1 1-4Z"/>
+  </symbol>
+  <symbol id="ic-eye" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M1 10s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7Z"/><circle cx="10" cy="10" r="3"/>
+  </symbol>
+  <symbol id="ic-warn" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10 3L18 17H2L10 3z"/><line x1="10" y1="9" x2="10" y2="12"/>
+    <circle cx="10" cy="14.5" r=".5" fill="currentColor"/>
+  </symbol>
+  <symbol id="ic-ok" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="4 10 8 14 16 6"/>
+  </symbol>
+  <symbol id="ic-chev" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="5 8 10 13 15 8"/>
+  </symbol>
+  <symbol id="ic-cvt" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="5 10 3 12 5 14"/>
+    <path d="M3 12h10a4 4 0 0 0 0-8h-1"/>
+    <polyline points="15 10 17 8 15 6"/>
+    <path d="M17 8H7a4 4 0 0 0 0 8h1"/>
+  </symbol>
+  <symbol id="ic-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+  </symbol>
+  <symbol id="ic-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+  </symbol>
+  <symbol id="ic-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m11.314 11.314l.707.707M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"></path>
+  </symbol>
+  <symbol id="ic-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+  </symbol>
+</defs>
+</svg>
+
+<!-- ═══ NAVBAR ═══ -->
+<nav class="app-nav">
+  <div class="logo">
+    <div class="logo-icon"><svg width="15" height="15" style="color:#fff"><use href="#ic-code"/></svg></div>
+    DevTools
+  </div>
+  
+  <!-- Tools Dropdown Selector -->
+  <div class="tldd">
+    <button class="tldd-btn" id="mainToolBtn">
+      <div class="topt-icon" style="color:var(--P)"><svg width="16" height="16"><use href="#ic-code"/></svg></div>
+      <span id="mainToolLbl">Prettier</span>
+      <svg width="13" height="13" class="lchev"><use href="#ic-chev"/></svg>
+    </button>
+    <div class="tldd-menu" id="mainToolMenu">
+      <!-- Diisi melalui JS -->
+    </div>
+  </div>
+
+  <div class="nav-r">
+    <div class="th-toggle" id="thTog" title="Ubah Tema">
+      <div class="th-slot on"  id="slDark"><svg width="13" height="13"><use href="#ic-moon"/></svg></div>
+      <div class="th-slot"     id="slLight"><svg width="13" height="13"><use href="#ic-sun"/></svg></div>
+    </div>
+    <button class="btn-cog" id="btnCog" title="Warna Aksen">
+      <svg width="16" height="16"><use href="#ic-cog"/></svg>
+    </button>
+  </div>
+</nav>
+
+<!-- ═══ SETTINGS DRAWER ═══ -->
+<div class="backdrop" id="backdrop"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-hdr">
+    <span class="drawer-title">Tampilan</span>
+    <button class="btn-xclose" id="btnXclose"><svg width="14" height="14"><use href="#ic-x"/></svg></button>
+  </div>
+  <div class="drawer-sec">
+    <div class="drawer-sec-ttl">Warna Aksen</div>
+    <div class="accent-grid" id="accentGrid"></div>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════
+     PRETTIER PAGE
+═══════════════════════════════ -->
+<div class="page active" id="page-prettier">
+  <div class="ptop">
+    <div class="ptop-l">
+      <div class="ldd">
+        <button class="lbtn" id="lbtn">
+          <span class="ldot" id="ldot"></span>
+          <span id="llbl">JSON</span>
+          <svg width="13" height="13" class="lchev"><use href="#ic-chev"/></svg>
+        </button>
+        <div class="lmenu" id="lmenu"></div>
+      </div>
+      <select class="isel" id="isel">
+        <option value="2">2 spasi</option>
+        <option value="4">4 spasi</option>
+        <option value="t">Tab</option>
+      </select>
+    </div>
+    <div class="ptop-r">
+      <input type="file" id="pfi" style="display:none">
+      <button class="btn bg" id="pOpen"><svg width="14" height="14"><use href="#ic-up"/></svg> Buka File</button>
+      <button class="btn bg" id="pMin"><svg width="14" height="14"><use href="#ic-zip"/></svg> Minify</button>
+      <button class="btn bd-" id="pClr"><svg width="14" height="14"><use href="#ic-trash"/></svg> Hapus</button>
+      <button class="btn bp"  id="pFmt"><svg width="14" height="14"><use href="#ic-wand"/></svg> Format</button>
+    </div>
+  </div>
+
+  <div class="errbanner" id="errb">
+    <svg width="13" height="13"><use href="#ic-warn"/></svg>
+    <span id="errtxt"></span>
+  </div>
+
+  <div class="ptab">
+    <div class="mtabs">
+      <button class="mtab active" id="tabIn">
+        <svg width="12" height="12"><use href="#ic-edit"/></svg> Masukan
+      </button>
+      <button class="mtab" id="tabOut">
+        <svg width="12" height="12"><use href="#ic-eye"/></svg> Keluaran
+      </button>
+    </div>
+    <span id="psts" style="font-size:12px;color:var(--tx3)"></span>
+  </div>
+
+  <div class="ewrap" id="ewrap">
+    <div class="dropov" id="dov">
+      <svg width="32" height="32"><use href="#ic-up"/></svg>
+      <p>Jatuhkan file di sini</p>
+    </div>
+    <div class="ipane" id="ipane">
+      <textarea id="pinput" spellcheck="false" placeholder="Tempel kode di sini atau jatuhkan file…"></textarea>
+    </div>
+    <div class="opane" id="opane">
+      <pre class="codeout" id="cout"></pre>
+    </div>
+  </div>
+
+  <div class="oacts" id="oacts">
+    <button class="btn bg" id="pPaste"><svg width="13" height="13"><use href="#ic-paste"/></svg> Gunakan sbg masukan</button>
+    <button class="btn bg" id="pCopy"><svg width="13" height="13"><use href="#ic-copy"/></svg> Salin</button>
+  </div>
+
+  <div class="pstat">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="spill sid" id="spill">Siap</span>
+      <span id="smsg" style="font-size:12px">Tempel kode dan klik Format</span>
+    </div>
+    <span id="sright" style="font-size:12px;color:var(--tx3)"></span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     IMAGE CONVERTER PAGE
+═══════════════════════════════ -->
+<div class="page" id="page-imgconv">
+  <div class="imghdr">
+    <div class="imgtitle">
+      <svg width="16" height="16" style="color:var(--P)"><use href="#ic-img"/></svg>
+      Konverter Gambar
+      <span class="fmtbadge">Apapun <span>→</span> Apapun</span>
+    </div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn bd-" id="tClr" disabled><svg width="13" height="13"><use href="#ic-trash"/></svg> Hapus</button>
+      <button class="btn bg"  id="tCvtAll" disabled><svg width="13" height="13"><use href="#ic-cvt"/></svg> Konversi Semua</button>
+      <button class="btn bok" id="tDlAll"  disabled><svg width="13" height="13"><use href="#ic-dlall"/></svg> Unduh Semua</button>
+    </div>
+  </div>
+
+  <div class="fmtbar">
+    <div class="fmtgrp">
+      <span class="fmtlbl">Keluaran</span>
+      <select class="fmtsel" id="ofmt">
+        <option value="image/png">PNG</option>
+        <option value="image/jpeg">JPEG</option>
+        <option value="image/webp">WebP</option>
+        <option value="image/bmp">BMP</option>
+        <option value="image/gif">GIF (statis)</option>
+        <option value="image/avif">AVIF</option>
+        <option value="image/tiff">TIFF</option>
+        <option value="tga">TGA (32-bit RGBA)</option>
+        <option value="ico">ICO (32×32)</option>
+        <option value="ppm">PPM (raw)</option>
+      </select>
+    </div>
+    <div class="qwrap" id="qwrap">
+      <span class="qlbl">Kualitas</span>
+      <input type="range" id="qr" min="10" max="100" value="92" step="1">
+      <span id="qv">92%</span>
+    </div>
+  </div>
+
+  <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;">
+    <div class="dz" id="tdz">
+      <input type="file" id="tfi" multiple>
+      <div class="dzico"><svg width="20" height="20"><use href="#ic-up"/></svg></div>
+      <h2>Jatuhkan gambar di sini</h2>
+      <p>PNG · JPEG · WebP · BMP · GIF · AVIF · TIFF · ICO · PPM</p>
+      <span class="dzhint">Klik untuk mencari</span>
+    </div>
+    <div class="flist" id="flist">
+      <div class="emptyhint on" id="tempty">Tambahkan gambar di atas untuk memulai.</div>
+    </div>
+  </div>
+
+  <div class="imgftr">
+    <div id="tstats" style="display:flex;gap:14px;align-items:center">
+      <span class="spill2"><span class="sdot" style="background:var(--tx3)"></span> 0 file</span>
+    </div>
+    <span style="font-size:12px;color:var(--tx3)">Berjalan offline · Data tidak keluar dari perangkat</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     MEDIA DOWNLOADER PAGE
+═══════════════════════════════ -->
+<div class="page" id="page-downloader">
+  <div class="dl-wrap">
+    <div class="dl-header">
+      <svg width="52" height="52" style="color:var(--P)"><use href="#ic-dlall"/></svg>
+      <h2>Pengunduh Media</h2>
+      <p>Unduh video dan audio secara instan dari platform favorit Anda.</p>
+    </div>
+    <form class="dl-input-group" onsubmit="handleDownload(event)">
+      <input type="url" class="dl-input" id="dlUrl" placeholder="Masukkan URL YouTube, Spotify, TikTok, atau Instagram..." required autocomplete="off">
+      <button type="submit" class="btn bp dl-btn">Cari Media</button>
+    </form>
+    <div id="dlState" style="min-height: 180px;">
+      <!-- Konten disuntikkan oleh JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     MANIFEST GENERATOR PAGE v3 (Minecraft)
+═══════════════════════════════ -->
+<div class="page" id="page-manifest">
+  <div class="m-tabs-hdr">
+    <button class="m-tab-btn active" onclick="switchMTab('mBasic')">1. Informasi Dasar</button>
+    <button class="m-tab-btn" onclick="switchMTab('mSubpacks')">2. Subpacks</button>
+    <button class="m-tab-btn" onclick="switchMTab('mCapabilities')">3. Capabilities</button>
+    <button class="m-tab-btn" onclick="switchMTab('mSettings')">4. Settings Builder (UI Config)</button>
+  </div>
+  
+  <div class="m-layout">
+    <div class="m-form">
+      <!-- Tab 1: Informasi Dasar -->
+      <div class="m-tab-content active" id="mTab-mBasic">
+        <div class="m-group">
+          <label>Format Version</label>
+          <select id="mFormatVersion" class="m-select" onchange="updateManifest()">
+            <option value="3">3 (Minecraft Terbaru / Modern)</option>
+            <option value="2">2 (Minecraft Klasik / Warisan)</option>
+          </select>
+        </div>
+        <div class="m-group">
+          <label>Nama Pack</label>
+          <input type="text" id="mName" class="m-input" value="Actions & Stuff" oninput="updateManifest()">
+        </div>
+        <div class="m-group">
+          <label>Deskripsi Pack</label>
+          <input type="text" id="mDesc" class="m-input" value="pack.description" oninput="updateManifest()">
+        </div>
+        <div class="m-group">
+          <label>Versi Pack (Header)</label>
+          <input type="text" id="mHeaderVersion" class="m-input" value="1.1.31" oninput="updateManifest()">
+        </div>
+        <div class="m-group">
+          <label>UUID Header</label>
+          <div class="uuid-group">
+            <input type="text" id="mUuid1" class="m-input" readonly>
+            <button class="btn bg" onclick="document.getElementById('mUuid1').value=genUUID();updateManifest()"><svg width="14" height="14"><use href="#ic-wand"/></svg></button>
+          </div>
+        </div>
+        <div class="m-group">
+          <label>Tipe Modul Utama</label>
+          <select id="mType" class="m-select" onchange="updateManifest()">
+            <option value="resources">Resources (Texture / Client Pack)</option>
+            <option value="data">Behavior (Data / Server Pack)</option>
+            <option value="skin_pack">Skin Pack</option>
+          </select>
+        </div>
+        <div class="m-group">
+          <label>Deskripsi Modul</label>
+          <input type="text" id="mModuleDesc" class="m-input" value="By Oreville Studios" oninput="updateManifest()">
+        </div>
+        <div class="m-group">
+          <label>UUID Module</label>
+          <div class="uuid-group">
+            <input type="text" id="mUuid2" class="m-input" readonly>
+            <button class="btn bg" onclick="document.getElementById('mUuid2').value=genUUID();updateManifest()"><svg width="14" height="14"><use href="#ic-wand"/></svg></button>
+          </div>
+        </div>
+        <div class="m-group">
+          <label>Versi Minimum Engine</label>
+          <select id="mEngine" class="m-select" onchange="updateManifest()">
+            <option value="1.26.10">1.26.10 (Mendukung Settings v3)</option>
+            <option value="1.21.0">1.21.0</option>
+            <option value="1.20.0">1.20.0</option>
+          </select>
+        </div>
+        <div class="m-group">
+          <label>Penulis / Metadata (Opsional)</label>
+          <input type="text" id="mAuthors" class="m-input" value="Oreville Studios Ltd" oninput="updateManifest()">
+        </div>
+      </div>
+
+      <!-- Tab 2: Subpacks -->
+      <div class="m-tab-content" id="mTab-mSubpacks">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h4 style="font-size:13px; font-weight:600; color:var(--tx2);">Konfigurasi Subpacks</h4>
+          <button class="btn bok" style="height:28px; padding:0 10px;" onclick="addMSubpack()">+ Tambah Subpack</button>
+        </div>
+        <div class="m-card-list" id="mSubpackList">
+          <!-- Diisi via JavaScript -->
+        </div>
+      </div>
+
+      <!-- Tab 3: Capabilities -->
+      <div class="m-tab-content" id="mTab-mCapabilities">
+        <h4 style="font-size:13px; font-weight:600; color:var(--tx2); margin-bottom:4px;">Pilih Capabilities Addon</h4>
+        <div class="caps-grid">
+          <label class="cap-item"><input type="checkbox" value="pbr" class="m-cap-chk" checked onchange="updateManifest()"> pbr (Rendering)</label>
+          <label class="cap-item"><input type="checkbox" value="raytraced" class="m-cap-chk" onchange="updateManifest()"> raytraced</label>
+          <label class="cap-item"><input type="checkbox" value="chemistry" class="m-cap-chk" onchange="updateManifest()"> chemistry</label>
+          <label class="cap-item"><input type="checkbox" value="experimental_custom_ui" class="m-cap-chk" onchange="updateManifest()"> custom_ui</label>
+        </div>
+      </div>
+
+      <!-- Tab 4: Settings Builder -->
+      <div class="m-tab-content" id="mTab-mSettings">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h4 style="font-size:13px; font-weight:600; color:var(--tx2);">Pengaturan UI Addon (settings)</h4>
+          <select id="mSettingTypeToAdd" class="m-select" style="width:130px; height:28px; padding:0 8px;" onchange="addMSetting(this.value); this.value='';">
+            <option value="">+ Tambah...</option>
+            <option value="label">Label / Judul</option>
+            <option value="toggle">Toggle (Switch)</option>
+            <option value="slider">Slider (Rentang)</option>
+            <option value="dropdown">Dropdown</option>
+          </select>
+        </div>
+        <div class="m-card-list" id="mSettingsList">
+          <!-- Diisi via JavaScript -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Output JSON Kode -->
+    <div class="m-output">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-shrink:0;">
+        <span style="font-size:14px; font-weight:600; color:var(--tx2);">Pratinjau manifest.json</span>
+        <div style="display:flex; gap:8px;">
+          <button class="btn bg" onclick="copyManifest()"><svg width="13" height="13"><use href="#ic-copy"/></svg> Salin</button>
+          <button class="btn bp" onclick="downloadManifest()"><svg width="13" height="13"><use href="#ic-dl"/></svg> Unduh JSON</button>
+        </div>
+      </div>
+      <pre id="mJsonOut" class="codeout" style="flex:1; overflow-y:auto; border:1px solid var(--bd); padding:16px; border-radius:var(--r); background:var(--bg);"></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     LOADING MESSAGES CUSTOMIZER PAGE
+═══════════════════════════════ -->
+<div class="page" id="page-loading_msg">
+  <div class="tool-grid">
+    <div class="tool-sidebar">
+      <h3 style="font-size:15px; font-weight:700;">Tambah Kutipan Baru</h3>
+      <form onsubmit="addLoadingMessage(event)" style="display:flex; gap:8px;">
+        <input type="text" id="lmNewInput" class="m-input" placeholder="Tulis kutipan pemuatan di sini..." required autocomplete="off">
+        <button type="submit" class="btn bp">Tambah</button>
+      </form>
+      
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+        <span style="font-size:12px; font-weight:600; color:var(--tx3); text-transform:uppercase;">Daftar Kutipan</span>
+        <button class="btn bg" style="height:26px; padding:0 8px; font-size:11px;" onclick="resetLoadingMessages()"><svg width="11" height="11"><use href="#ic-trash"/></svg> Setel Ulang</button>
+      </div>
+
+      <div class="search-bar">
+        <div class="search-icon"><svg width="14" height="14"><use href="#ic-search"/></svg></div>
+        <input type="text" id="lmSearch" class="search-input" placeholder="Cari kutipan..." oninput="renderLoadingMessages()">
+      </div>
+
+      <div class="msg-list" id="loadingMsgContainer">
+        <!-- Diisi via JS -->
+      </div>
+    </div>
+
+    <!-- Simulator & Export Pratinjau JSON -->
+    <div class="tool-preview">
+      <h3 style="font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px;">
+        <svg width="16" height="16" style="color:var(--P)"><use href="#ic-eye"/></svg> Minecraft Loading Screen Simulator
+      </h3>
+      
+      <div class="mc-sim-wrap">
+        <div class="mc-logo-area">
+          <div class="mc-logo-text">Mojang Studios</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px; align-items:center;">
+          <div class="mc-loading-text" id="mcSimText">Memuat simulator...</div>
+          <div class="mc-loading-bar-wrap">
+            <div class="mc-loading-bar-fill" id="mcSimProgress"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+        <span style="font-size:14px; font-weight:600; color:var(--tx2);">loading_messages.json</span>
+        <div style="display:flex; gap:8px;">
+          <button class="btn bg" onclick="copyLoadingMessages()"><svg width="13" height="13"><use href="#ic-copy"/></svg> Salin JSON</button>
+          <button class="btn bp" onclick="downloadLoadingMessages()"><svg width="13" height="13"><use href="#ic-dl"/></svg> Unduh JSON</button>
+        </div>
+      </div>
+      <pre id="lmJsonOut" class="codeout" style="flex:1; overflow-y:auto; border:1px solid var(--bd); padding:16px; border-radius:var(--r); background:var(--bg); height: 200px;"></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     SPLASHES CUSTOMIZER PAGE
+═══════════════════════════════ -->
+<div class="page" id="page-splashes">
+  <div class="tool-grid">
+    <div class="tool-sidebar">
+      <h3 style="font-size:15px; font-weight:700;">Tambah Splash Baru</h3>
+      <form onsubmit="addSplashText(event)" style="display:flex; gap:8px;">
+        <input type="text" id="spNewInput" class="m-input" placeholder="Tulis teks splash baru di sini..." required autocomplete="off">
+        <button type="submit" class="btn bp">Tambah</button>
+      </form>
+      
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+        <span style="font-size:12px; font-weight:600; color:var(--tx3); text-transform:uppercase;">Daftar Splash</span>
+        <button class="btn bg" style="height:26px; padding:0 8px; font-size:11px;" onclick="resetSplashTexts()"><svg width="11" height="11"><use href="#ic-trash"/></svg> Setel Ulang</button>
+      </div>
+
+      <div class="search-bar">
+        <div class="search-icon"><svg width="14" height="14"><use href="#ic-search"/></svg></div>
+        <input type="text" id="spSearch" class="search-input" placeholder="Cari teks splash..." oninput="renderSplashTexts()">
+      </div>
+
+      <div class="msg-list" id="splashTextsContainer">
+        <!-- Diisi via JS -->
+      </div>
+    </div>
+
+    <!-- Simulator & Export Pratinjau JSON -->
+    <div class="tool-preview">
+      <h3 style="font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px;">
+        <svg width="16" height="16" style="color:var(--P)"><use href="#ic-sparkles"/></svg> Minecraft Main Menu Splash Simulator
+      </h3>
+      
+      <div class="mc-splash-sim">
+        <div class="mc-panorama-bg"></div>
+        <div class="mc-splash-logo-wrap">
+          <div class="mc-title-img">MINECRAFT</div>
+          <div class="mc-splash-text" id="mcSplashText">Avocado!!</div>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+        <span style="font-size:14px; font-weight:600; color:var(--tx2);">splashes.json</span>
+        <div style="display:flex; gap:8px;">
+          <button class="btn bg" onclick="copySplashes()"><svg width="13" height="13"><use href="#ic-copy"/></svg> Salin JSON</button>
+          <button class="btn bp" onclick="downloadSplashes()"><svg width="13" height="13"><use href="#ic-dl"/></svg> Unduh JSON</button>
+        </div>
+      </div>
+      <pre id="spJsonOut" class="codeout" style="flex:1; overflow-y:auto; border:1px solid var(--bd); padding:16px; border-radius:var(--r); background:var(--bg); height: 200px;"></pre>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <svg width="13" height="13"><use href="#ic-ok"/></svg>
+  <span id="toastmsg">Selesai!</span>
+</div>
+
+<script>
+'use strict';
+/* ════════════════════════
+   THEME
+════════════════════════ */
+const ACCENTS = [
+  {id:'blue',   nm:'Biru',   c:'#5e9eff', gr:'linear-gradient(135deg,#5e9eff,#3b6fd4)'},
+  {id:'purple', nm:'Ungu',   c:'#bf5af2', gr:'linear-gradient(135deg,#bf5af2,#5e5ce6)'},
+  {id:'cyan',   nm:'Cyan',   c:'#00ded3', gr:'linear-gradient(135deg,#00ded3,#007aff)'},
+  {id:'green',  nm:'Hijau',  c:'#30d158', gr:'linear-gradient(135deg,#30d158,#05a660)'},
+  {id:'amber',  nm:'Amber',  c:'#ff9f0a', gr:'linear-gradient(135deg,#ff9f0a,#ff6b00)'},
+  {id:'red',    nm:'Merah',  c:'#ff453a', gr:'linear-gradient(135deg,#ff453a,#c0392b)'},
+  {id:'pink',   nm:'Pink',   c:'#ff2d78', gr:'linear-gradient(135deg,#ff2d78,#c2185b)'},
+  {id:'teal',   nm:'Teal',   c:'#30d5c8', gr:'linear-gradient(135deg,#30d5c8,#009688)'},
+];
+const root = document.documentElement;
+let curTheme  = localStorage.getItem('dt-theme')  || 'dark';
+let curAccent = localStorage.getItem('dt-accent') || 'blue';
+
+function applyTheme(t) {
+  curTheme = t;
+  root.setAttribute('data-theme', t);
+  localStorage.setItem('dt-theme', t);
+  const dark = t === 'dark';
+  document.getElementById('slDark').classList.toggle('on', dark);
+  document.getElementById('slLight').classList.toggle('on', !dark);
+}
+
+function applyAccent(id) {
+  curAccent = id;
+  root.setAttribute('data-accent', id);
+  localStorage.setItem('dt-accent', id);
+  document.querySelectorAll('.accent-item').forEach(el => el.classList.toggle('on', el.dataset.id === id));
+  const activeTool = document.querySelector('.topt.sel');
+  if(activeTool) selectMainTool(activeTool.dataset.id);
+}
+
+// Build accent grid
+const accentGrid = document.getElementById('accentGrid');
+ACCENTS.forEach(a => {
+  const d = document.createElement('div');
+  d.className = 'accent-item'; d.dataset.id = a.id;
+  d.innerHTML = `<div class="accent-dot" style="background:${a.gr}"></div><span class="accent-nm">${a.nm}</span>`;
+  d.addEventListener('click', () => applyAccent(a.id));
+  accentGrid.appendChild(d);
+});
+
+document.getElementById('thTog').addEventListener('click', () => applyTheme(curTheme==='dark'?'light':'dark'));
+
+const backdrop = document.getElementById('backdrop');
+const drawer   = document.getElementById('drawer');
+function openDrawer()  { backdrop.classList.add('open');  drawer.classList.add('open');  }
+function closeDrawer() { backdrop.classList.remove('open'); drawer.classList.remove('open'); }
+document.getElementById('btnCog').addEventListener('click', openDrawer);
+document.getElementById('btnXclose').addEventListener('click', closeDrawer);
+backdrop.addEventListener('click', closeDrawer);
+
+/* ════════════════════════
+   MAIN TOOL SELECTOR
+════════════════════════ */
+const MAIN_TOOLS = [
+  {id:'prettier', label:'Prettier', icon:'ic-code', color:'var(--P)'},
+  {id:'imgconv', label:'Konverter Gambar', icon:'ic-img', color:'var(--a-purple)'},
+  {id:'downloader', label:'Pengunduh Media', icon:'ic-dlall', color:'var(--a-pink)'},
+  {id:'manifest', label:'Pembuat Manifest', icon:'ic-box', color:'var(--a-green)'},
+  {id:'loading_msg', label:'Pesan Pemuatan', icon:'ic-chat', color:'var(--a-blue)'},
+  {id:'splashes', label:'Splash Screen', icon:'ic-sparkles', color:'var(--a-amber)'}
+];
+
+let curTool = 'prettier';
+const mainToolMenu = document.getElementById('mainToolMenu');
+const mainToolBtn = document.getElementById('mainToolBtn');
+
+MAIN_TOOLS.forEach(t => {
+  const d = document.createElement('div');
+  d.className = 'topt' + (t.id === curTool ? ' sel' : '');
+  d.dataset.id = t.id;
+  d.innerHTML = `<div class="topt-icon" style="color:${t.color}"><svg width="18" height="18"><use href="#${t.icon}"/></svg></div>${t.label}`;
+  d.addEventListener('click', () => selectMainTool(t.id));
+  mainToolMenu.appendChild(d);
+});
+
+mainToolBtn.addEventListener('click', e => { e.stopPropagation(); mainToolBtn.classList.toggle('open'); mainToolMenu.classList.toggle('open'); });
+document.addEventListener('click', () => { mainToolBtn.classList.remove('open'); mainToolMenu.classList.remove('open'); });
+
+function selectMainTool(id) {
+  curTool = id;
+  const t = MAIN_TOOLS.find(x => x.id === id);
+  document.getElementById('mainToolLbl').textContent = t.label;
+  mainToolBtn.querySelector('.topt-icon').style.color = t.color;
+  mainToolBtn.querySelector('.topt-icon use').setAttribute('href', '#' + t.icon);
+
+  document.querySelectorAll('.topt').forEach(o => o.classList.toggle('sel', o.dataset.id === id));
+  mainToolBtn.classList.remove('open'); mainToolMenu.classList.remove('open');
+
+  document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  
+  if (id === 'manifest') updateManifest();
+}
+
+applyTheme(curTheme);
+applyAccent(curAccent);
+
+/* ════════════════════════
+   TOAST
+════════════════════════ */
+let toastTmr;
+function toast(msg, color='#30d158') {
+  const el = document.getElementById('toast');
+  el.style.color = color;
+  document.getElementById('toastmsg').textContent = msg;
+  el.classList.add('on');
+  clearTimeout(toastTmr);
+  toastTmr = setTimeout(() => el.classList.remove('on'), 2200);
+}
+
+/* ════════════════════════════════════════
+   PRETTIER
+════════════════════════════════════════ */
+const LANGS = [
+  {id:'json',label:'JSON',       dot:'#f0c060',exts:['.json']},
+  {id:'html',label:'HTML',       dot:'#fb923c',exts:['.html','.htm']},
+  {id:'css', label:'CSS',        dot:'#5e9eff',exts:['.css']},
+  {id:'js',  label:'JavaScript', dot:'#f0c060',exts:['.js','.mjs','.cjs']},
+  {id:'ts',  label:'TypeScript', dot:'#22d3ee',exts:['.ts']},
+  {id:'jsx', label:'JSX',        dot:'#4ec994',exts:['.jsx']},
+  {id:'tsx', label:'TSX',        dot:'#c084fc',exts:['.tsx']},
+];
+
+let pLang = 'json', pLast = '', pMode = 'input', pTmr;
+
+const lmenu = document.getElementById('lmenu');
+LANGS.forEach(l => {
+  const d = document.createElement('div');
+  d.className = 'lopt' + (l.id==='json' ? ' sel' : '');
+  d.dataset.id = l.id;
+  d.innerHTML = `<span class="ldot" style="background:${l.dot}"></span>${l.label}<span class="lext">${l.exts[0]}</span>`;
+  d.addEventListener('click', () => pSelLang(l.id));
+  lmenu.appendChild(d);
+});
+const lbtn = document.getElementById('lbtn');
+lbtn.addEventListener('click', e => { e.stopPropagation(); lbtn.classList.toggle('open'); lmenu.classList.toggle('open'); });
+lmenu.addEventListener('click', e => e.stopPropagation());
+
+function pSelLang(id) {
+  pLang = id;
+  const l = LANGS.find(x => x.id===id);
+  document.getElementById('ldot').style.background = l.dot;
+  document.getElementById('llbl').textContent = l.label;
+  document.querySelectorAll('.lopt').forEach(o => o.classList.toggle('sel', o.dataset.id===id));
+  lbtn.classList.remove('open'); lmenu.classList.remove('open');
+  pPlaceholder();
+  if (document.getElementById('pinput').value.trim()) pFormat();
+}
+
+function pPlaceholder() {
+  const ph = {
+    json:'{\n  "name": "Dunia",\n  "versi": 1\n}',
+    html:'<!DOCTYPE html>\n<html lang="id">\n<head>\n  <meta charset="UTF-8">\n  <title>Halo</title>\n</head>\n<body>\n  <h1>Halo Dunia</h1>\n</body>\n</html>',
+    css: 'body {\n  margin: 0;\n  font-family: sans-serif;\n  background: #fff;\n}',
+    js:  'function halo(nama) {\n  const pesan = `Halo, ${nama}!`;\n  return pesan;\n}',
+    ts:  'function halo(nama: string): string {\n  const pesan = `Halo, ${nama}!`;\n  return pesan;\n}',
+    jsx: 'function App() {\n  return (\n    <div className="app">\n      <h1>Halo Dunia</h1>\n    </div>\n  );\n}',
+    tsx: 'const App: React.FC = () => {\n  return (\n    <div className="app">\n      <h1>Halo Dunia</h1>\n    </div>\n  );\n};',
+  };
+  const l = LANGS.find(x=>x.id===pLang);
+  document.getElementById('pinput').placeholder = `Tempel kode ${l.label} di sini atau jatuhkan file…\n\n${ph[pLang]}`;
+}
+
+/* ── Highlighters ── */
+function E(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function S(c,s){ return `<span class="${c}">${s}</span>`; }
+
+function hlJSON(code) {
+  return code.split('\n').map(line => {
+    return line.replace(
+      /(^[ \t]*)("(?:[^"\\]|\\.)*")([ \t]*:)|(^[ \t]*)("(?:[^"\\]|\\.)*")|(true|false|null)|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|([{}\[\],:])/g,
+      (_,i1,k,c1, i2,v, boolnull, num, pun) => {
+        if (k)       return E(i1||'') + S('jk', E(k)) + S('jp', E(c1));
+        if (v)       return E(i2||'') + S('js_', E(v));
+        if (boolnull)return boolnull==='null' ? S('jnu',boolnull) : S('jb',boolnull);
+        if (num)     return S('jn', E(num));
+        if (pun)     return S('jp', E(pun));
+        return E(_);
+      }
+    );
+  }).join('\n');
+}
+
+const JS_KW = new Set(['break','case','catch','class','const','continue','debugger','default','delete','do','else','export','extends','finally','for','from','function','if','import','in','instanceof','let','new','null','of','return','static','super','switch','this','throw','true','false','try','typeof','undefined','var','void','while','with','yield','async','await','get','set']);
+const TS_KW = new Set([...JS_KW,'abstract','as','declare','enum','implements','interface','is','keyof','namespace','never','readonly','satisfies','type','unknown','infer','any','string','number','boolean','object','symbol','bigint','private','public','protected']);
+
+function hlJS(code, extra=new Set()) {
+  const kw = extra.size ? new Set([...JS_KW,...extra]) : JS_KW;
+  const n = code.length; let out='', i=0;
+  while (i < n) {
+    const c = code[i];
+    if (c==='/' && code[i+1]==='/') {
+      let j=i; while(j<n && code[j]!=='\n') j++;
+      out+=S('tc',E(code.slice(i,j))); i=j; continue;
+    }
+    if (c==='/' && code[i+1]==='*') {
+      let j=i+2; while(j<n && !(code[j]==='*'&&code[j+1]==='/')) j++; j+=2;
+      out+=S('tc',E(code.slice(i,j))); i=j; continue;
+    }
+    if (c==='`') {
+      let j=i+1;
+      while(j<n && code[j]!=='`') { if(code[j]==='\\') j++; j++; }
+      out+=S('ttp',E(code.slice(i,j+1))); i=j+1; continue;
+    }
+    if (c==='"'||c==="'") {
+      const q=c; let j=i+1;
+      while(j<n && code[j]!==q && code[j]!=='\n') { if(code[j]==='\\') j++; j++; }
+      out+=S('ts_',E(code.slice(i,j+1))); i=j+1; continue;
+    }
+    if (c==='/' && i>0 && /[=(,!&|?:[\n]/.test(code[i-1])) {
+      let j=i+1;
+      while(j<n && code[j]!=='/' && code[j]!=='\n') { if(code[j]==='\\') j++; j++; }
+      if (j<n && code[j]==='/') { j++; while(j<n && /[gimsuy]/.test(code[j])) j++; }
+      out+=S('ts_',E(code.slice(i,j))); i=j; continue;
+    }
+    if (c==='@' && /[A-Za-z_$]/.test(code[i+1]||'')) {
+      let j=i+1; while(j<n && /[\w$]/.test(code[j])) j++;
+      out+=S('td',E(code.slice(i,j))); i=j; continue;
+    }
+    if (/\d/.test(c)||(c==='.'&&/\d/.test(code[i+1]||''))) {
+      let j=i; while(j<n && /[\d.eExXoObBn_]/.test(code[j])) j++;
+      out+=S('tn',E(code.slice(i,j))); i=j; continue;
+    }
+    if (/[A-Za-z_$]/.test(c)) {
+      let j=i; while(j<n && /[\w$]/.test(code[j])) j++;
+      const w=code.slice(i,j);
+      const isCall=/^\s*\(/.test(code.slice(j));
+      const isType=/^\s*[<|&]/.test(code.slice(j)) || /^[A-Z]/.test(w);
+      if (kw.has(w)) out+=S('tk',E(w));
+      else if (isCall) out+=S('tf',E(w));
+      else if (isType && extra.size) out+=S('tty',E(w));
+      else out+=E(w);
+      i=j; continue;
+    }
+    if (/[+\-*/%=<>!&|^~?:,;.()\[\]{}]/.test(c)) { out+=S('top',E(c)); i++; continue; }
+    out+=E(c); i++;
+  }
+  return out;
+}
+
+function hlTS(c)  { return hlJS(c, new Set([...TS_KW])); }
+function hlJSX(c) { return hlJS(c); }
+function hlTSX(c) { return hlJS(c, new Set([...TS_KW])); }
+
+function hlCSS(code) {
+  let out = '';
+  const chunks = code.split(/(\/\*[\s\S]*?\*\/)/g);
+  chunks.forEach((ch, idx) => {
+    if (idx % 2 === 1) { out += S('cc', E(ch)); return; }
+    out += ch
+      .replace(/(@[\w-]+)/g, m => S('ca', E(m)))
+      .replace(/(#[\w-]+\s*(?:,|\{)|\.[\w-]+\s*(?:,|\{)|[\w-]+\s*\{)/g, m => {
+        const i = m.lastIndexOf('{');
+        return S('ch', E(m.slice(0,i).trim())) + E(' {');
+      })
+      .replace(/([\w-]+)\s*:/g, (m,p) => S('cs', E(p)) + ':')
+      .replace(/:\s*([^;{}\n]+)/g, (m,v) => ': ' + S('cv', E(v.trim())));
+  });
+  return out;
+}
+
+function hlHTML(raw) {
+  const parts = raw.split(/(<[^>]*>|<!--[\s\S]*?-->)/g);
+  return parts.map((p, i) => {
+    if (i % 2 === 0) return E(p);
+    if (p.startsWith('<!--')) return S('hc', E(p));
+    if (p.toLowerCase().startsWith('<!doctype')) return S('hd', E(p));
+    return p.replace(
+      /^(<\/?)([A-Za-z][A-Za-z0-9-]*)([\s\S]*?)(\/?>)$/,
+      (_, open, tag, attrs, close) => {
+        const hattrs = attrs.replace(
+          /\s+([\w:-]+)(?:=(?:"([^"]*)"|'([^']*)'))?/g,
+          (_, a, dv, sv) => {
+            const val = dv !== undefined ? dv : sv;
+            return ' ' + S('ha', E(a)) + (val !== undefined ? '=' + S('hv', E('"'+val+'"')) : '');
+          }
+        );
+        return E(open) + S('hg', E(tag)) + hattrs + E(close);
+      }
+    );
+  }).join('');
+}
+
+const HLS = {json:hlJSON, html:hlHTML, css:hlCSS, js:hlJS, ts:hlTS, jsx:hlJSX, tsx:hlTSX};
+
+function pIndent() { const v=document.getElementById('isel').value; return v==='t'?'\t':Number(v); }
+function pFmtCode(raw) {
+  if (pLang === 'json') return JSON.stringify(JSON.parse(raw), null, pIndent());
+  return raw.replace(/\r\n/g,'\n').split('\n').map(l=>l.trimEnd()).join('\n').trimEnd() + '\n';
+}
+function pMinCode(raw) {
+  if (pLang === 'json') return JSON.stringify(JSON.parse(raw));
+  return raw.split('\n').map(l=>l.trim()).filter(Boolean).join('\n');
+}
+
+function pFormat() {
+  const raw = document.getElementById('pinput').value;
+  pClrErr();
+  if (!raw.trim()) { pStat('idle','Input kosong'); pLast=''; pShowOut(null); return; }
+  try {
+    const fmt = pFmtCode(raw.trim());
+    pLast = fmt;
+    const hl = (HLS[pLang]||hlJS)(fmt);
+    pShowOut(hl);
+    const bytes = new Blob([fmt]).size;
+    const sz = bytes<1024 ? bytes+' B' : (bytes/1024).toFixed(1)+' KB';
+    pStat('ok', `Diformat · ${fmt.split('\n').length} baris`, sz);
+    pSwitch('output');
+  } catch(e) { pShowErr(e.message); pStat('err', e.message); }
+}
+
+function pMinify() {
+  const raw = document.getElementById('pinput').value;
+  pClrErr();
+  if (!raw.trim()) return;
+  try {
+    const mini = pMinCode(raw.trim());
+    pLast = mini;
+    pShowOut((HLS[pLang]||hlJS)(mini));
+    const bytes = new Blob([mini]).size;
+    pStat('ok','Minified', bytes<1024 ? bytes+' B' : (bytes/1024).toFixed(1)+' KB');
+    pSwitch('output');
+  } catch(e) { pShowErr(e.message); pStat('err',e.message); }
+}
+
+function pShowOut(html) {
+  const el = document.getElementById('cout');
+  if (html === null || html === '') {
+    el.innerHTML = '<span style="color:var(--tx3);font-family:var(--sans);font-size:13px;">Keluaran format akan tampil di sini.</span>';
+  } else {
+    el.innerHTML = html;
+  }
+}
+
+function pSwitch(tab) {
+  pMode = tab;
+  const isIn = tab==='input';
+  document.getElementById('tabIn').classList.toggle('active', isIn);
+  document.getElementById('tabOut').classList.toggle('active', !isIn);
+  document.getElementById('ipane').style.display = isIn ? '' : 'none';
+  document.getElementById('opane').style.display = isIn ? 'none' : 'block';
+  document.getElementById('oacts').classList.toggle('on', !isIn);
+  const pi = document.getElementById('pinput');
+  if (isIn) document.getElementById('psts').textContent = pi.value.length.toLocaleString()+' karakter';
+  else if (pLast) document.getElementById('psts').textContent = pLast.split('\n').length+' baris';
+}
+
+function pStat(type, msg, right='') {
+  const map = {ok:['sok','Valid'],err:['serr','Error'],idle:['sid','Siap']};
+  const [cls,lbl] = map[type]||map.idle;
+  const pill = document.getElementById('spill');
+  pill.className='spill '+cls; pill.textContent=lbl;
+  document.getElementById('smsg').textContent=msg;
+  document.getElementById('sright').textContent=right;
+}
+function pClrErr() { document.getElementById('errb').classList.remove('on'); document.getElementById('errtxt').textContent=''; }
+function pShowErr(m) { document.getElementById('errtxt').textContent=m; document.getElementById('errb').classList.add('on'); }
+function pUpdStats() { if(pMode==='input') document.getElementById('psts').textContent=document.getElementById('pinput').value.length.toLocaleString()+' karakter'; }
+
+function pLoadFile(f) {
+  if (!f) return;
+  const nm = f.name.toLowerCase();
+  const lang = LANGS.find(l => l.exts.some(e => nm.endsWith(e)));
+  if (lang) pSelLang(lang.id);
+  const r = new FileReader();
+  r.onload = ev => {
+    document.getElementById('pinput').value = ev.target.result;
+    pUpdStats(); pFormat(); toast('File dimuat');
+  };
+  r.readAsText(f);
+}
+
+const ewrap = document.getElementById('ewrap');
+const dov   = document.getElementById('dov');
+ewrap.addEventListener('dragenter', e => { e.preventDefault(); dov.classList.add('on'); });
+ewrap.addEventListener('dragover',  e => e.preventDefault());
+ewrap.addEventListener('dragleave', e => { if(!ewrap.contains(e.relatedTarget)) dov.classList.remove('on'); });
+ewrap.addEventListener('drop', e => { e.preventDefault(); dov.classList.remove('on'); pLoadFile(e.dataTransfer.files[0]); });
+
+document.getElementById('pfi').addEventListener('change', function(){ pLoadFile(this.files[0]); this.value=''; });
+document.getElementById('pOpen').addEventListener('click', () => document.getElementById('pfi').click());
+document.getElementById('pFmt').addEventListener('click', pFormat);
+document.getElementById('pMin').addEventListener('click', pMinify);
+document.getElementById('pClr').addEventListener('click', () => {
+  document.getElementById('pinput').value=''; pLast=''; pShowOut(null);
+  pClrErr(); pStat('idle','Tempel kode dan klik Format');
+  document.getElementById('psts').textContent='0 karakter'; pSwitch('input');
+});
+document.getElementById('pCopy').addEventListener('click', () => {
+  if (!pLast) return;
+  navigator.clipboard.writeText(pLast).then(() => toast('Disalin!'));
+});
+document.getElementById('pPaste').addEventListener('click', () => {
+  if (!pLast) return;
+  document.getElementById('pinput').value=pLast;
+  pSwitch('input'); document.getElementById('pinput').focus();
+  pUpdStats(); toast('Digunakan sebagai masukan');
+});
+document.getElementById('tabIn').addEventListener('click', () => pSwitch('input'));
+document.getElementById('tabOut').addEventListener('click', () => pSwitch('output'));
+document.getElementById('isel').addEventListener('change', () => { if(pLast) pFormat(); });
+
+const pinput = document.getElementById('pinput');
+pinput.addEventListener('input', () => { pUpdStats(); clearTimeout(pTmr); pTmr=setTimeout(pFormat,800); });
+pinput.addEventListener('paste',() => { clearTimeout(pTmr); pTmr=setTimeout(pFormat,160); });
+document.addEventListener('keydown', e => { if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();pFormat();} });
+
+pPlaceholder(); pSwitch('input'); pShowOut(null);
+document.getElementById('ldot').style.background = LANGS.find(l=>l.id==='json').dot;
+
+/* ════════════════════════════════════════
+   IMAGE CONVERTER
+════════════════════════════════════════ */
+document.getElementById('tfi').setAttribute('accept','image/*,.tga,.ppm,.ico');
+const ofmt = document.getElementById('ofmt');
+const qr   = document.getElementById('qr');
+const qv   = document.getElementById('qv');
+const qwrap= document.getElementById('qwrap');
+
+qr.addEventListener('input', () => qv.textContent = qr.value + '%');
+function updQvis() {
+  const f=ofmt.value;
+  qwrap.style.display = (f==='image/jpeg'||f==='image/webp'||f==='image/avif') ? 'flex' : 'none';
+}
+ofmt.addEventListener('change', updQvis);
+updQvis();
+
+let tFiles=[], tId=0;
+
+const tdz = document.getElementById('tdz');
+tdz.addEventListener('dragenter',e=>{e.preventDefault();tdz.classList.add('over');});
+tdz.addEventListener('dragover', e=>e.preventDefault());
+tdz.addEventListener('dragleave',e=>{if(!tdz.contains(e.relatedTarget))tdz.classList.remove('over');});
+tdz.addEventListener('drop',e=>{e.preventDefault();tdz.classList.remove('over');tAdd([...e.dataTransfer.files]);});
+document.getElementById('tfi').addEventListener('change',function(){tAdd([...this.files]);this.value='';});
+
+function isImg(f){ return f.type.startsWith('image/')||/\.(png|jpe?g|webp|bmp|gif|avif|tiff?|ico|tga|ppm)$/i.test(f.name); }
+
+function tAdd(list) {
+  const imgs = list.filter(isImg);
+  if (!imgs.length) { toast('Tidak ada gambar valid yang ditemukan','#ff453a'); return; }
+  imgs.forEach(file => {
+    const id=++tId;
+    const entry={id,file,name:file.name,w:0,h:0,blob:null,outFmt:null,status:'q',img:null};
+    tFiles.push(entry);
+    tRender(entry);
+    const url=URL.createObjectURL(file);
+    const im=new Image();
+    im.onload=()=>{
+      entry.w=im.naturalWidth; entry.h=im.naturalHeight; entry.img=im;
+      URL.revokeObjectURL(url); tMeta(id);
+    };
+    im.onerror=()=>URL.revokeObjectURL(url);
+    im.src=url;
+  });
+  tUI();
+}
+
+function tRender(e) {
+  document.getElementById('tempty').classList.remove('on');
+  const d=document.createElement('div');
+  d.className='fitem'; d.id='fi'+e.id;
+  d.innerHTML=`
+    <div class="ftph" id="fth${e.id}"><svg width="15" height="15"><use href="#ic-img"/></svg></div>
+    <div class="finfo">
+      <div class="fname" title="${E(e.name)}">${E(e.name.replace(/\.[^.]+$/,''))}</div>
+      <div class="fmeta" id="fme${e.id}">Memuat…</div>
+    </div>
+    <span class="fst stq" id="fst${e.id}">Antrean</span>
+    <div class="facts">
+      <button class="btn bg" onclick="tConv(${e.id})" style="padding:0 9px;height:28px;font-size:12px">
+        <svg width="12" height="12"><use href="#ic-cvt"/></svg> Konversi
+      </button>
+      <button class="btn bok" id="fdl${e.id}" onclick="tDl(${e.id})" style="padding:0 9px;height:28px;font-size:12px" disabled>
+        <svg width="12" height="12"><use href="#ic-dl"/></svg> Simpan
+      </button>
+      <button class="btn bd-" onclick="tRm(${e.id})" style="padding:0 8px;height:28px">
+        <svg width="12" height="12"><use href="#ic-x"/></svg>
+      </button>
+    </div>`;
+  document.getElementById('flist').appendChild(d);
+}
+
+function tMeta(id) {
+  const e=tFiles.find(f=>f.id===id); if(!e) return;
+  const m=document.getElementById('fme'+id);
+  if(m) m.textContent=`${e.w}×${e.h}px · ${(e.file.size/1024).toFixed(1)} KB`;
+  const ph=document.getElementById('fth'+id);
+  if(ph&&e.img) {
+    const c=document.createElement('canvas'); c.width=c.height=40;
+    const ctx=c.getContext('2d');
+    const r=e.w/e.h; let sx=0,sy=0,sw=e.w,sh=e.h;
+    if(r>1){sw=e.h;sx=(e.w-sw)/2;}else{sh=e.w;sy=(e.h-sh)/2;}
+    ctx.drawImage(e.img,sx,sy,sw,sh,0,0,40,40);
+    const img=document.createElement('img'); img.src=c.toDataURL(); img.className='fthumb';
+    ph.replaceWith(img);
+  }
+}
+
+function encTGA(d,w,h) {
+  const buf=new Uint8Array(18+w*h*4);
+  buf[2]=2; buf[12]=w&0xFF; buf[13]=(w>>8)&0xFF;
+  buf[14]=h&0xFF; buf[15]=(h>>8)&0xFF; buf[16]=32; buf[17]=8;
+  const src=d.data; let o=18;
+  for(let row=h-1;row>=0;row--){
+    let p=row*w*4;
+    for(let col=0;col<w;col++,p+=4){ buf[o++]=src[p+2];buf[o++]=src[p+1];buf[o++]=src[p];buf[o++]=src[p+3]; }
+  }
+  return new Blob([buf],{type:'application/octet-stream'});
+}
+
+function encBMP(d,w,h) {
+  const rowBytes=Math.ceil(w*3/4)*4, pixSz=rowBytes*h, fileSz=54+pixSz;
+  const buf=new DataView(new ArrayBuffer(fileSz));
+  buf.setUint8(0,0x42);buf.setUint8(1,0x4D);
+  buf.setUint32(2,fileSz,true); buf.setUint32(6,0,true); buf.setUint32(10,54,true);
+  buf.setUint32(14,40,true); buf.setInt32(18,w,true); buf.setInt32(22,-h,true);
+  buf.setUint16(26,1,true); buf.setUint16(28,24,true); buf.setUint32(30,0,true);
+  buf.setUint32(34,pixSz,true); buf.setInt32(38,2835,true); buf.setInt32(42,2835,true);
+  buf.setUint32(46,0,true); buf.setUint32(50,0,true);
+  const src=d.data; let o=54;
+  for(let row=0;row<h;row++){
+    let colO=0;
+    for(let col=0;col<w;col++){
+      const p=(row*w+col)*4;
+      buf.setUint8(o+colO,src[p+2]); buf.setUint8(o+colO+1,src[p+1]); buf.setUint8(o+colO+2,src[p]);
+      colO+=3;
+    }
+    o+=rowBytes;
+  }
+  return new Blob([buf.buffer],{type:'image/bmp'});
+}
+
+function encICO(d,w,h) {
+  const SZ=32;
+  const tc=document.createElement('canvas'); tc.width=tc.height=SZ;
+  const tctx=tc.getContext('2d');
+  const tmp=document.createElement('canvas'); tmp.width=w; tmp.height=h;
+  tmp.getContext('2d').putImageData(d,0,0);
+  tctx.drawImage(tmp,0,0,w,h,0,0,SZ,SZ);
+  const sc=tctx.getImageData(0,0,SZ,SZ);
+  const pixSz=SZ*SZ*4, andSz=SZ*(SZ/8), bmpSz=40+pixSz+andSz;
+  const total=6+16+bmpSz, buf=new DataView(new ArrayBuffer(total));
+  buf.setUint16(0,0,true); buf.setUint16(2,1,true); buf.setUint16(4,1,true);
+  buf.setUint8(6,SZ); buf.setUint8(7,SZ); buf.setUint8(8,0); buf.setUint8(9,0);
+  buf.setUint16(10,1,true); buf.setUint16(12,32,true);
+  buf.setUint32(14,bmpSz,true); buf.setUint32(18,22,true);
+  let o=22;
+  buf.setUint32(o,40,true);o+=4; buf.setInt32(o,SZ,true);o+=4; buf.setInt32(o,SZ*2,true);o+=4;
+  buf.setUint16(o,1,true);o+=2; buf.setUint16(o,32,true);o+=2;
+  buf.setUint32(o,0,true);o+=4; buf.setUint32(o,pixSz,true);o+=4;
+  buf.setInt32(o,0,true);o+=4; buf.setInt32(o,0,true);o+=4;
+  buf.setUint32(o,0,true);o+=4; buf.setUint32(o,0,true);o+=4;
+  const pd=sc.data;
+  for(let row=SZ-1;row>=0;row--) for(let col=0;col<SZ;col++){
+    const pi=(row*SZ+col)*4;
+    buf.setUint8(o++,pd[pi+2]); buf.setUint8(o++,pd[pi+1]);
+    buf.setUint8(o++,pd[pi]);   buf.setUint8(o++,pd[pi+3]);
+  }
+  for(let i=0;i<andSz;i++) buf.setUint8(o++,0);
+  return new Blob([buf.buffer],{type:'image/x-icon'});
+}
+
+function encPPM(d,w,h) {
+  const hdr=`P6\n${w} ${h}\n255\n`;
+  const hdrBytes=new TextEncoder().encode(hdr);
+  const pixBytes=new Uint8Array(w*h*3);
+  const src=d.data;
+  for(let i=0,j=0;i<src.length;i+=4){ pixBytes[j++]=src[i];pixBytes[j++]=src[i+1];pixBytes[j++]=src[i+2]; }
+  const out=new Uint8Array(hdrBytes.length+pixBytes.length);
+  out.set(hdrBytes,0); out.set(pixBytes,hdrBytes.length);
+  return new Blob([out],{type:'image/x-portable-pixmap'});
+}
+
+async function tConv(id) {
+  const e=tFiles.find(f=>f.id===id); if(!e) return;
+  tSt(id,'cvt'); await new Promise(r=>setTimeout(r,10));
+  try {
+    if (!e.img) await new Promise((res,rej)=>{
+      const url=URL.createObjectURL(e.file), im=new Image();
+      im.onload=()=>{e.w=im.naturalWidth;e.h=im.naturalHeight;e.img=im;URL.revokeObjectURL(url);res();};
+      im.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('Gagal memuat gambar'));};
+      im.src=url;
+    });
+    const fmt=ofmt.value, q=Number(qr.value)/100;
+    const c=document.createElement('canvas'); c.width=e.w; c.height=e.h;
+    const ctx=c.getContext('2d'); ctx.drawImage(e.img,0,0);
+    const imgd=ctx.getImageData(0,0,e.w,e.h);
+    let blob;
+    if (fmt==='tga')       blob=encTGA(imgd,e.w,e.h);
+    else if(fmt==='ico')   blob=encICO(imgd,e.w,e.h);
+    else if(fmt==='ppm')   blob=encPPM(imgd,e.w,e.h);
+    else if(fmt==='image/bmp') blob=encBMP(imgd,e.w,e.h);
+    else blob=await new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('toBlob gagal')),fmt,q));
+    e.blob=blob; e.outFmt=fmt;
+    tSt(id,'ok');
+    const dl=document.getElementById('fdl'+id); if(dl) dl.disabled=false;
+    const m=document.getElementById('fme'+id);
+    if(m) m.textContent=`${e.w}×${e.h}px · ${(e.file.size/1024).toFixed(1)}KB → ${tFmtLbl(fmt)} ${(blob.size/1024).toFixed(1)}KB`;
+    tUI();
+  } catch(err){ tSt(id,'err'); toast('Gagal: '+err.message,'#ff453a'); }
+}
+
+function tFmtLbl(f){
+  return {
+    'image/png':'PNG','image/jpeg':'JPEG','image/webp':'WebP','image/bmp':'BMP',
+    'image/gif':'GIF','image/avif':'AVIF','image/tiff':'TIFF','tga':'TGA','ico':'ICO','ppm':'PPM'
+  }[f]||f;
+}
+function tExt(f){
+  return {
+    'image/png':'.png','image/jpeg':'.jpg','image/webp':'.webp','image/bmp':'.bmp',
+    'image/gif':'.gif','image/avif':'.avif','image/tiff':'.tiff','tga':'.tga','ico':'.ico','ppm':'.ppm'
+  }[f]||'.bin';
+}
+
+function tSt(id,st) {
+  const el=document.getElementById('fst'+id); if(!el) return;
+  const e=tFiles.find(f=>f.id===id); if(e) e.status=st;
+  const cls={q:'stq',cvt:'stcvt',ok:'stok',err:'sterr'};
+  el.className='fst '+(cls[st]||'stq');
+  const lbl={q:'Antrean',cvt:'Proses...',ok:'Selesai',err:'Error'};
+  el.innerHTML=st==='cvt'?'<span class="spin"></span> Memproses':(lbl[st]||st);
+}
+
+function tDl(id) {
+  const e=tFiles.find(f=>f.id===id); if(!e||!e.blob) return;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(e.blob);
+  a.download=e.name.replace(/\.[^.]+$/,'')+tExt(e.outFmt||ofmt.value);
+  a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
+
+function tRm(id) {
+  tFiles=tFiles.filter(f=>f.id!==id);
+  const el=document.getElementById('fi'+id); if(el) el.remove();
+  if(!tFiles.length) document.getElementById('tempty').classList.add('on');
+  tUI();
+}
+
+async function tConvAll() {
+  const pending=tFiles.filter(f=>f.status!=='ok');
+  for(const e of pending) await tConv(e.id);
+  if(pending.length) toast(`Terkonversi ${pending.length} gambar`);
+}
+
+async function tDlAll() {
+  const done=tFiles.filter(f=>f.blob); if(!done.length) return;
+  for(const e of done){ tDl(e.id); await new Promise(r=>setTimeout(r,200)); }
+  toast(`Mengunduh ${done.length} file`);
+}
+
+function tUI() {
+  const total=tFiles.length, done=tFiles.filter(f=>f.status==='ok').length, err=tFiles.filter(f=>f.status==='err').length;
+  document.getElementById('tClr').disabled=total===0;
+  document.getElementById('tCvtAll').disabled=total===0||tFiles.every(f=>f.status==='ok');
+  document.getElementById('tDlAll').disabled=done===0;
+  document.getElementById('tstats').innerHTML=`
+    <span class="spill2"><span class="sdot" style="background:var(--tx3)"></span>${total} file</span>
+    ${done?`<span class="spill2"><span class="sdot" style="background:#30d158"></span>${done} selesai</span>`:''}
+    ${err?`<span class="spill2"><span class="sdot" style="background:#ff453a"></span>${err} gagal</span>`:''}`;
+}
+
+document.getElementById('tClr').addEventListener('click',()=>{
+  tFiles=[]; document.getElementById('flist').querySelectorAll('.fitem').forEach(e=>e.remove());
+  document.getElementById('tempty').classList.add('on'); tUI();
+});
+document.getElementById('tCvtAll').addEventListener('click', tConvAll);
+document.getElementById('tDlAll').addEventListener('click', tDlAll);
+
+/* ════════════════════════════════════════
+   MEDIA DOWNLOADER (MOCK)
+════════════════════════════════════════ */
+function handleDownload(e) {
+  e.preventDefault();
+  const url = document.getElementById('dlUrl').value.toLowerCase();
+  if(!url) return;
+
+  const dlState = document.getElementById('dlState');
+  dlState.innerHTML = '<div style="text-align:center; padding: 40px; color:var(--tx3);"><span class="spin"></span><br><br>Mencari metadata media...</div>';
+
+  setTimeout(() => {
+     let platform = 'Platform Tidak Dikenal';
+     let thumb = 'https://via.placeholder.com/150/333333/FFFFFF?text=Media';
+     
+     if(url.includes('youtu')) { 
+       platform = 'YouTube'; 
+       thumb = 'https://via.placeholder.com/150/FF0000/FFFFFF?text=YouTube'; 
+     } else if(url.includes('spotify')) { 
+       platform = 'Spotify'; 
+       thumb = 'https://via.placeholder.com/150/1DB954/FFFFFF?text=Spotify'; 
+     } else if(url.includes('tiktok')) { 
+       platform = 'TikTok'; 
+       thumb = 'https://via.placeholder.com/150/000000/FFFFFF?text=TikTok'; 
+     } else if(url.includes('instagram') || url.includes('ig.me')) { 
+       platform = 'Instagram'; 
+       thumb = 'https://via.placeholder.com/150/E1306C/FFFFFF?text=Instagram'; 
+     } else {
+       toast('Platform tidak didukung, menampilkan simulasi dummy.', '#ff9f0a');
+     }
+
+     dlState.innerHTML = `
+        <div class="dl-card">
+           <img src="${thumb}" class="dl-thumb" alt="Thumbnail">
+           <div class="dl-info">
+             <h4>${platform} Media Ditemukan</h4>
+             <p>Platform: <strong>${platform}</strong> | Durasi: 03:45</p>
+             <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+               <button type="button" class="btn bp" onclick="toast('Mengunduh Video (MP4)...')">Unduh MP4</button>
+               <button type="button" class="btn bg" onclick="toast('Mengunduh Audio (MP3)...')">Unduh MP3</button>
+             </div>
+           </div>
+        </div>
+     `;
+  }, 1200);
+}
+
+/* ════════════════════════════════════════
+   MANIFEST GENERATOR v3 (Minecraft)
+════════════════════════════════════════ */
+let mSubpacks = [
+  { folder_name: "SP0", name: "Custom Experience §8Compatible with other texture packs.", tier: 0 },
+  { folder_name: "SP1", name: "Vanilla Experience §8Vanilla textures, custom animations & effects.", tier: 0 }
+];
+
+let mSettings = [
+  { type: "label", text: "§c«§4=== Settings ===§c»" },
+  { type: "toggle", text: "text.oreville_ans.glowing", name: "oreville_ans:glowing", default: true },
+  { type: "dropdown", text: "Tipe Karakter", name: "oreville_ans:shape", default: "widetype1", options: [
+      { name: "widetype1", text: "Wide Type 1" },
+      { name: "slimtype1", text: "Slim Type 1" }
+    ]
+  }
+];
+
+function switchMTab(tabName) {
+  document.querySelectorAll('.m-tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.m-tab-content').forEach(content => content.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('mTab-' + tabName).classList.add('active');
+}
+
+function genUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+// Subpack List Builder
+function renderMSubpackList() {
+  const container = document.getElementById('mSubpackList');
+  container.innerHTML = '';
+  if(mSubpacks.length === 0) {
+    container.innerHTML = '<div style="color:var(--tx3); font-size:12px; text-align:center; padding:15px;">Tidak ada subpack tambahan.</div>';
+    return;
+  }
+  mSubpacks.forEach((sp, index) => {
+    const card = document.createElement('div');
+    card.className = 'm-card';
+    card.innerHTML = `
+      <div class="m-card-hdr">
+        <span>Subpack #${index+1}</span>
+        <button class="btn bd-" style="height:22px; padding:0 6px; font-size:10px;" onclick="removeMSubpack(${index})">Hapus</button>
+      </div>
+      <div class="m-card-body">
+        <div class="m-group">
+          <label>Nama Folder</label>
+          <input type="text" class="m-input" value="${sp.folder_name}" oninput="updateMSubpackVal(${index}, 'folder_name', this.value)">
+        </div>
+        <div class="m-group">
+          <label>Memory Tier</label>
+          <input type="number" class="m-input" value="${sp.tier}" oninput="updateMSubpackVal(${index}, 'tier', Number(this.value))">
+        </div>
+      </div>
+      <div class="m-group">
+        <label>Nama Tampilan (Subpack)</label>
+        <input type="text" class="m-input" value="${sp.name}" oninput="updateMSubpackVal(${index}, 'name', this.value)">
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function addMSubpack() {
+  mSubpacks.push({ folder_name: "SP" + mSubpacks.length, name: "Nama Subpack Baru", tier: 0 });
+  renderMSubpackList();
+  updateManifest();
+}
+
+function removeMSubpack(index) {
+  mSubpacks.splice(index, 1);
+  renderMSubpackList();
+  updateManifest();
+}
+
+function updateMSubpackVal(index, prop, val) {
+  mSubpacks[index][prop] = val;
+  updateManifest();
+}
+
+// Settings UI Builder
+function renderMSettingsList() {
+  const container = document.getElementById('mSettingsList');
+  container.innerHTML = '';
+  if(mSettings.length === 0) {
+    container.innerHTML = '<div style="color:var(--tx3); font-size:12px; text-align:center; padding:15px;">Belum ada pengaturan tambahan.</div>';
+    return;
+  }
+  mSettings.forEach((set, index) => {
+    const card = document.createElement('div');
+    card.className = 'm-card';
+    
+    let innerFields = '';
+    if(set.type === 'label') {
+      innerFields = `
+        <div class="m-group">
+          <label>Teks Label</label>
+          <input type="text" class="m-input" value="${set.text}" oninput="updateMSettingVal(${index}, 'text', this.value)">
+        </div>
+      `;
+    } else if (set.type === 'toggle') {
+      innerFields = `
+        <div class="m-group">
+          <label>Teks Tampilan</label>
+          <input type="text" class="m-input" value="${set.text}" oninput="updateMSettingVal(${index}, 'text', this.value)">
+        </div>
+        <div class="m-group">
+          <label>Namespace/Nama ID</label>
+          <input type="text" class="m-input" value="${set.name}" oninput="updateMSettingVal(${index}, 'name', this.value)">
+        </div>
+        <div class="m-group">
+          <label>Default</label>
+          <select class="m-select" onchange="updateMSettingVal(${index}, 'default', this.value === 'true')">
+            <option value="true" ${set.default ? 'selected' : ''}>True (Aktif)</option>
+            <option value="false" ${!set.default ? 'selected' : ''}>False (Mati)</option>
+          </select>
+        </div>
+      `;
+    } else if (set.type === 'slider') {
+      innerFields = `
+        <div class="m-group">
+          <label>Teks Slider</label>
+          <input type="text" class="m-input" value="${set.text}" oninput="updateMSettingVal(${index}, 'text', this.value)">
+        </div>
+        <div class="m-group">
+          <label>Nama ID</label>
+          <input type="text" class="m-input" value="${set.name}" oninput="updateMSettingVal(${index}, 'name', this.value)">
+        </div>
+        <div class="m-group">
+          <label>Min / Max / Step</label>
+          <div style="display:flex; gap:4px;">
+            <input type="number" class="m-input" placeholder="Min" value="${set.min}" oninput="updateMSettingVal(${index}, 'min', Number(this.value))">
+            <input type="number" class="m-input" placeholder="Max" value="${set.max}" oninput="updateMSettingVal(${index}, 'max', Number(this.value))">
+            <input type="number" class="m-input" placeholder="Step" value="${set.step}" oninput="updateMSettingVal(${index}, 'step', Number(this.value))">
+          </div>
+        </div>
+        <div class="m-group">
+          <label>Default</label>
+          <input type="number" class="m-input" value="${set.default}" oninput="updateMSettingVal(${index}, 'default', Number(this.value))">
+        </div>
+      `;
+    } else if (set.type === 'dropdown') {
+      let optStr = set.options.map((o, oi) => `
+        <div style="display:flex; gap:4px; margin-bottom:4px;">
+          <input type="text" class="m-input" placeholder="Value ID" value="${o.name}" oninput="updateMSettingOpt(${index}, ${oi}, 'name', this.value)">
+          <input type="text" class="m-input" placeholder="Teks Opsi" value="${o.text}" oninput="updateMSettingOpt(${index}, ${oi}, 'text', this.value)">
+          <button class="btn bd-" style="height:32px; padding:0 8px;" onclick="removeMSettingOpt(${index}, ${oi})">X</button>
+        </div>
+      `).join('');
+
+      innerFields = `
+        <div class="m-group">
+          <label>Teks Dropdown</label>
+          <input type="text" class="m-input" value="${set.text}" oninput="updateMSettingVal(${index}, 'text', this.value)">
+        </div>
+        <div class="m-group">
+          <label>Nama ID</label>
+          <input type="text" class="m-input" value="${set.name}" oninput="updateMSettingVal(${index}, 'name', this.value)">
+        </div>
+        <div class="m-group">
+          <label>Default Option (Name ID)</label>
+          <input type="text" class="m-input" value="${set.default}" oninput="updateMSettingVal(${index}, 'default', this.value)">
+        </div>
+        <div class="m-group" style="grid-column: 1 / -1;">
+          <label style="display:flex; justify-content:space-between; align-items:center;">Opsi Pilihan <button class="btn bok" style="height:20px; padding:0 6px; font-size:10px;" onclick="addMSettingOpt(${index})">+ Tambah Opsi</button></label>
+          <div>${optStr}</div>
+        </div>
+      `;
+    }
+
+    card.innerHTML = `
+      <div class="m-card-hdr">
+        <span style="text-transform:uppercase; font-size:10px; font-weight:700; letter-spacing:0.05em;">TIPE: ${set.type}</span>
+        <button class="btn bd-" style="height:22px; padding:0 6px; font-size:10px;" onclick="removeMSetting(${index})">Hapus</button>
+      </div>
+      <div class="m-card-body full">
+        ${innerFields}
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function addMSetting(type) {
+  if(!type) return;
+  if(type === 'label') {
+    mSettings.push({ type: 'label', text: "Kategori Baru" });
+  } else if(type === 'toggle') {
+    mSettings.push({ type: 'toggle', text: "Opsi Switch", name: "addon:opsi_baru", default: true });
+  } else if(type === 'slider') {
+    mSettings.push({ type: 'slider', text: "Opsi Rentang", name: "addon:scl_baru", min: 0, max: 10, step: 1, default: 5 });
+  } else if(type === 'dropdown') {
+    mSettings.push({ type: 'dropdown', text: "Pilih Mode", name: "addon:mode_baru", default: "normal", options: [
+      { name: "normal", text: "Mode Normal" }
+    ]});
+  }
+  renderMSettingsList();
+  updateManifest();
+}
+
+function removeMSetting(index) {
+  mSettings.splice(index, 1);
+  renderMSettingsList();
+  updateManifest();
+}
+
+function updateMSettingVal(index, prop, val) {
+  mSettings[index][prop] = val;
+  updateManifest();
+}
+
+function addMSettingOpt(setIndex) {
+  mSettings[setIndex].options.push({ name: "baru", text: "Opsi Baru" });
+  renderMSettingsList();
+  updateManifest();
+}
+
+function removeMSettingOpt(setIndex, optIndex) {
+  mSettings[setIndex].options.splice(optIndex, 1);
+  renderMSettingsList();
+  updateManifest();
+}
+
+function updateMSettingOpt(setIndex, optIndex, prop, val) {
+  mSettings[setIndex].options[optIndex][prop] = val;
+  updateManifest();
+}
+
+// Render final manifest.json
+function updateManifest() {
+  const isV3 = document.getElementById('mFormatVersion').value === '3';
+  const formatVer = Number(document.getElementById('mFormatVersion').value);
+  const auth = document.getElementById('mAuthors').value.trim();
+
+  const manifest = {
+    format_version: formatVer,
+    header: {
+      description: document.getElementById('mDesc').value || 'pack.description',
+      name: document.getElementById('mName').value || 'Nama Pack',
+      uuid: document.getElementById('mUuid1').value,
+      version: document.getElementById('mHeaderVersion').value.split('.').map(v => isNaN(Number(v)) ? v : Number(v)),
+      min_engine_version: document.getElementById('mEngine').value.split('.').map(Number)
+    },
+    modules: [
+      {
+        description: document.getElementById('mModuleDesc').value || 'Deskripsi Modul',
+        type: document.getElementById('mType').value,
+        uuid: document.getElementById('mUuid2').value,
+        version: document.getElementById('mHeaderVersion').value.split('.').map(v => isNaN(Number(v)) ? v : Number(v))
+      }
+    ]
+  };
+
+  // Add capabilities
+  const capChks = document.querySelectorAll('.m-cap-chk:checked');
+  if(capChks.length > 0) {
+    manifest.capabilities = Array.from(capChks).map(chk => chk.value);
+  }
+
+  // Add metadata
+  if(auth) {
+    manifest.metadata = {
+      authors: [auth]
+    };
+  }
+
+  // Add subpacks
+  if(mSubpacks.length > 0) {
+    manifest.subpacks = mSubpacks.map(sp => ({
+      folder_name: sp.folder_name,
+      memory_performance_tier: sp.tier,
+      name: sp.name
+    }));
+  }
+
+  // Add settings builder (format v3 mendukung schema settings addons)
+  if(isV3 && mSettings.length > 0) {
+    manifest.settings = mSettings.map(set => {
+      const item = { type: set.type };
+      if(set.text) item.text = set.text;
+      if(set.name) item.name = set.name;
+      if(set.default !== undefined) item.default = set.default;
+      if(set.type === 'slider') {
+        item.min = set.min;
+        item.max = set.max;
+        item.step = set.step;
+      }
+      if(set.type === 'dropdown') {
+        item.options = set.options.map(o => ({ name: o.name, text: o.text }));
+      }
+      return item;
+    });
+  }
+
+  const rawJson = JSON.stringify(manifest, null, 2);
+  document.getElementById('mJsonOut').textContent = rawJson;
+  document.getElementById('mJsonOut').innerHTML = hlJSON(rawJson);
+}
+
+function copyManifest() {
+  const json = document.getElementById('mJsonOut').textContent;
+  navigator.clipboard.writeText(json).then(() => toast('Manifest disalin!'));
+}
+
+function downloadManifest() {
+  const json = document.getElementById('mJsonOut').textContent;
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'manifest.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Mengunduh manifest.json');
+}
+
+// Inisialisasi manifest
+document.getElementById('mUuid1').value = genUUID();
+document.getElementById('mUuid2').value = genUUID();
+renderMSubpackList();
+renderMSettingsList();
+updateManifest();
+
+/* ════════════════════════════════════════
+   LOADING MESSAGES CUSTOMIZER
+════════════════════════════════════════ */
+// Data Default yang disuplai dari file loading_messages.json milik user
+let loadingMsgsPreset = [
+  "Resentment only binds us to the past. It is better to be sincere and move on because our time is too precious to be wasted in resentment. -ItsSandwich",
+  "I make music for ears, not eyes. So, you will never see me singing while wearing a bikini. -Adele",
+  "Imagination is more important than knowledge. Knowledge is limited, whereas imagination embraces the entire world. -Albert Einstein",
+  "The only way to do great work is to love what you do. -Steve Jobs",
+  "Education is the most powerful weapon which you can use to change the world. -Nelson Mandela",
+  "All our dreams can come true, if we have the courage to pursue them. -Walt Disney",
+  "Whether you think you can, or you think you can't--you're right. -Henry Ford",
+  "In the end, it's not the years in your life that count. It's the life in your years. -Abraham Lincoln",
+  "Live as if you were to die tomorrow. Learn as if you were to live forever. -Mahatma Gandhi",
+  "The only thing we have to fear is fear itself. -Franklin D. Roosevelt",
+  "Don't count the days, make the days count. -Muhammad Ali",
+  "Success is not the key to happiness. Happiness is the key to success. -Albert Schweitzer",
+  "I have not failed. I've just found 10,000 ways that won't work. -Thomas A. Edison",
+  "Start with what is right rather than what is acceptable. -Franz Kafka",
+  "Optimism is the faith that leads to achievement. -Helen Keller",
+  "Darkness cannot drive out darkness, only light can do that. -Martin Luther King Jr.",
+  "A journey of a thousand miles begins with a single step. -Lao Tzu",
+  "Life is what happens when you're busy making other plans. -John Lennon",
+  "Love the life you live. Live the life you love. -Bob Marley",
+  "Change will not come if we wait for some other person or some other time. -Barack Obama"
+];
+
+let myLoadingMsgs = [...loadingMsgsPreset];
+
+function renderLoadingMessages() {
+  const container = document.getElementById('loadingMsgContainer');
+  const searchVal = document.getElementById('lmSearch').value.toLowerCase();
+  container.innerHTML = '';
+
+  const filtered = myLoadingMsgs.filter(m => m.toLowerCase().includes(searchVal));
+
+  if(filtered.length === 0) {
+    container.innerHTML = '<div style="color:var(--tx3); text-align:center; padding:20px; font-size:12px;">Tidak ada kutipan yang sesuai.</div>';
+    return;
+  }
+
+  filtered.forEach((msg, index) => {
+    // Cari index asli dari array global
+    const realIdx = myLoadingMsgs.indexOf(msg);
+    const item = document.createElement('div');
+    item.className = 'msg-item';
+    item.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:4px; min-width:0;">
+        <span class="msg-text">${E(msg)}</span>
+        ${loadingMsgsPreset.includes(msg) ? '<span class="preset-badge" style="width:fit-content">Bawaan</span>' : ''}
+      </div>
+      <button class="btn bd-" style="height:26px; padding:0 8px; font-size:11px;" onclick="deleteLoadingMsg(${realIdx})">Hapus</button>
+    `;
+    container.appendChild(item);
+  });
+
+  // Render Pratinjau JSON
+  const exported = { loading_messages: myLoadingMsgs };
+  const raw = JSON.stringify(exported, null, 2);
+  document.getElementById('lmJsonOut').textContent = raw;
+  document.getElementById('lmJsonOut').innerHTML = hlJSON(raw);
+}
+
+function addLoadingMessage(e) {
+  e.preventDefault();
+  const input = document.getElementById('lmNewInput');
+  const txt = input.value.trim();
+  if(!txt) return;
+  myLoadingMsgs.unshift(txt);
+  input.value = '';
+  renderLoadingMessages();
+  toast('Kutipan ditambahkan!');
+}
+
+function deleteLoadingMsg(idx) {
+  myLoadingMsgs.splice(idx, 1);
+  renderLoadingMessages();
+  toast('Kutipan dihapus', '#ff453a');
+}
+
+function resetLoadingMessages() {
+  myLoadingMsgs = [...loadingMsgsPreset];
+  renderLoadingMessages();
+  toast('Daftar diatur ulang ke bawaan');
+}
+
+function copyLoadingMessages() {
+  const json = document.getElementById('lmJsonOut').textContent;
+  navigator.clipboard.writeText(json).then(() => toast('JSON disalin!'));
+}
+
+function downloadLoadingMessages() {
+  const json = document.getElementById('lmJsonOut').textContent;
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'loading_messages.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Mengunduh loading_messages.json');
+}
+
+// Minecraft Loading Simulator Logic
+let simProgress = 0;
+let currentSimMsgIdx = 0;
+
+function runMcLoadingSimulator() {
+  setInterval(() => {
+    simProgress += 1.5;
+    if(simProgress > 100) {
+      simProgress = 0;
+      // Ambil acak dari daftar yang tersedia
+      if(myLoadingMsgs.length > 0) {
+        currentSimMsgIdx = Math.floor(Math.random() * myLoadingMsgs.length);
+        document.getElementById('mcSimText').textContent = myLoadingMsgs[currentSimMsgIdx];
+      } else {
+        document.getElementById('mcSimText').textContent = "Pesan muatan habis!";
+      }
+    }
+    document.getElementById('mcSimProgress').style.width = simProgress + '%';
+  }, 100);
+}
+
+// Init Loading messages
+renderLoadingMessages();
+runMcLoadingSimulator();
+
+/* ════════════════════════════════════════
+   SPLASH SCREEN CUSTOMIZER
+════════════════════════════════════════ */
+// Data Default yang disuplai dari splashes.json milik user
+let splashesPreset = [
+  "Avocado!!",
+  "What in the... Avocado?",
+  "Did someone say... Avocado?",
+  "Bouncy!",
+  "Experimental!",
+  "Enhanced!",
+  "Tweaked!",
+  "Shocking!",
+  "Dynamic!",
+  "Smooth!",
+  "Funny looking!",
+  "¡¿Y esta rosa?!",
+  "That's right, two row splashes!",
+  "You are welcome here!",
+  "Headache!",
+  "It wasn't serious!",
+  "Hurry up already!",
+  "Very silly!",
+  "Don't sleep. Take over the world!",
+  "Pop goes the world!",
+  "Live, laugh, love <3",
+  "By Oreville Studios!",
+  "CHICKEN JOCKEY!!!",
+  "Now with flips!",
+  "splish splash splosh"
+];
+
+let mySplashes = [...splashesPreset];
+
+function renderSplashTexts() {
+  const container = document.getElementById('splashTextsContainer');
+  const searchVal = document.getElementById('spSearch').value.toLowerCase();
+  container.innerHTML = '';
+
+  const filtered = mySplashes.filter(s => s.toLowerCase().includes(searchVal));
+
+  if(filtered.length === 0) {
+    container.innerHTML = '<div style="color:var(--tx3); text-align:center; padding:20px; font-size:12px;">Tidak ada splash text yang sesuai.</div>';
+    return;
+  }
+
+  filtered.forEach((sp, index) => {
+    const realIdx = mySplashes.indexOf(sp);
+    const item = document.createElement('div');
+    item.className = 'msg-item';
+    item.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:4px; min-width:0;">
+        <span class="msg-text">${E(sp)}</span>
+        ${splashesPreset.includes(sp) ? '<span class="preset-badge" style="width:fit-content; background:rgba(255,159,10,0.15); color:var(--a-amber)">Bawaan</span>' : ''}
+      </div>
+      <button class="btn bd-" style="height:26px; padding:0 8px; font-size:11px;" onclick="deleteSplashText(${realIdx})">Hapus</button>
+    `;
+    container.appendChild(item);
+  });
+
+  // Render Pratinjau JSON
+  const exported = { splashes: mySplashes };
+  const raw = JSON.stringify(exported, null, 2);
+  document.getElementById('spJsonOut').textContent = raw;
+  document.getElementById('spJsonOut').innerHTML = hlJSON(raw);
+}
+
+function addSplashText(e) {
+  e.preventDefault();
+  const input = document.getElementById('spNewInput');
+  const txt = input.value.trim();
+  if(!txt) return;
+  mySplashes.unshift(txt);
+  input.value = '';
+  renderSplashTexts();
+  toast('Splash text ditambahkan!');
+}
+
+function deleteSplashText(idx) {
+  mySplashes.splice(idx, 1);
+  renderSplashTexts();
+  toast('Splash text dihapus', '#ff453a');
+}
+
+function resetSplashTexts() {
+  mySplashes = [...splashesPreset];
+  renderSplashTexts();
+  toast('Daftar diatur ulang ke bawaan');
+}
+
+function copySplashes() {
+  const json = document.getElementById('spJsonOut').textContent;
+  navigator.clipboard.writeText(json).then(() => toast('JSON disalin!'));
+}
+
+function downloadSplashes() {
+  const json = document.getElementById('spJsonOut').textContent;
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'splashes.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Mengunduh splashes.json');
+}
+
+// Minecraft Splash Simulator Rotation Logic
+function runSplashTextsSimulator() {
+  setInterval(() => {
+    if(mySplashes.length > 0) {
+      const randIdx = Math.floor(Math.random() * mySplashes.length);
+      document.getElementById('mcSplashText').textContent = mySplashes[randIdx];
+    } else {
+      document.getElementById('mcSplashText').textContent = "Empty Splashes!";
+    }
+  }, 3000);
+}
+
+// Init Splashes
+renderSplashTexts();
+runSplashTextsSimulator();
+
+</script>
+</body>
+</html>
